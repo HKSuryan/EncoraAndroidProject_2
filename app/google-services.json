@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "167759246398",
+    "project_id": "takeanote1-a6f4a",
+    "storage_bucket": "takeanote1-a6f4a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:167759246398:android:0520bab9a68460c6778d6f",
+        "android_client_info": {
+          "package_name": "com.example.takeanote1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "167759246398-m36sguit20nm40bcirrtaocavku68ast.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.takeanote1",
+            "certificate_hash": "8e12a34d48e66d39d0859c883422f1432bed831e"
+          }
+        },
+        {
+          "client_id": "167759246398-l66v7he7as9pogl41a1i09nli9okchcu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZbpSb9zEsw-kB0uDuHXbzXo7Go7t2l7Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "167759246398-l66v7he7as9pogl41a1i09nli9okchcu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

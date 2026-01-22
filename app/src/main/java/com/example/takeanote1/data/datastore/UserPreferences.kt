@@ -1,6 +1,7 @@
 package com.example.takeanote1.data.datastore
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -13,18 +14,23 @@ class UserPreferences(private val context: Context) {
 
     companion object {
         val USER_ID = stringPreferencesKey("user_id")
+        private const val TAG = "UserPreferences"
     }
 
     // Save userId
     suspend fun saveUserId(uid: String) {
+        Log.d(TAG, "saveUserId: Saving uid: $uid")
         context.dataStore.edit { preferences ->
             preferences[USER_ID] = uid
         }
+        Log.d(TAG, "saveUserId: Successfully saved uid: $uid")
     }
 
     // Observe userId
     val userIdFlow: Flow<String?> =
         context.dataStore.data.map { preferences ->
-            preferences[USER_ID]
+            val uid = preferences[USER_ID]
+            Log.d(TAG, "userIdFlow: Current uid in DataStore: $uid")
+            uid
         }
 }
