@@ -1,4 +1,7 @@
 package com.example.takeanote1.domain.model
 
-class Note {
-}
+// This is for the ui
+data class Note(
+    val title: String,
+    val content: String
+)
