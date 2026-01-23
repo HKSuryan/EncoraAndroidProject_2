@@ -15,13 +15,15 @@ class GoogleSignInManager(activity: Activity) {
 
     init {
         Log.d("GoogleSignInManager", "init: Initializing GoogleSignInOptions and Client")
+
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            .requestId() // Needed for UserEntity ID
+            .requestIdToken("WebClientId") // <-- replace with Firebase Web client ID
             .build()
 
         googleSignInClient = GoogleSignIn.getClient(activity, gso)
     }
+
 
     /** Launch Google Sign-In intent */
     fun signIn(): Intent {

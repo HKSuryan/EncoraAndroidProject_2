@@ -8,49 +8,59 @@ import com.example.takeanote1.data.datastore.UserPreferences
 import com.example.takeanote1.data.local.entity.UserEntity
 import com.example.takeanote1.data.repository.NotesRepository
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class AuthViewModel(
-    private val userRepository: NotesRepository,
+    private val repository: NotesRepository,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
+
+    private val auth = FirebaseAuth.getInstance()
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState
 
     fun signInWithGoogle(account: GoogleSignInAccount) {
-        Log.d("AuthViewModel", "signInWithGoogle() called for user: ${account.email}")
+        Log.d("AuthViewModel", "signInWithGoogle started")
         _uiState.value = AuthUiState.Loading
 
         viewModelScope.launch {
             try {
-                val userId = account.id ?: throw Exception("No user ID")
-                val userName = account.displayName ?: "Unknown"
-                val userEmail = account.email ?: "Unknown"
-                val profilePicture = account.photoUrl?.toString()
+                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                val result = auth.signInWithCredential(credential).await()
 
-                Log.d("AuthViewModel", "signInWithGoogle: Saving user to Room database")
-                userRepository.saveUser(
+                val firebaseUser = result.user
+                    ?: throw Exception("Firebase user is null")
+
+                val uid = firebaseUser.uid
+                val name = firebaseUser.displayName ?: "Unknown"
+                val email = firebaseUser.email ?: "Unknown"
+                val photo = firebaseUser.photoUrl?.toString()
+
+                Log.d("AuthViewModel", "Firebase login success: $uid")
+
+                // Save user to Room
+                repository.saveUser(
                     UserEntity(
-                        id = userId,
-                        name = userName,
-                        email = userEmail,
-                        profilePictureUrl = profilePicture
+                        id = uid,
+                        name = name,
+                        email = email,
+                        profilePictureUrl = photo
                     )
                 )
-                Log.d("AuthViewModel", "signInWithGoogle: User saved to Room successfully")
 
-                Log.d("AuthViewModel", "signInWithGoogle: Saving userId to DataStore")
-                userPreferences.saveUserId(userId)
-                Log.d("AuthViewModel", "signInWithGoogle: userId saved to DataStore successfully")
+                // Save UID to DataStore
+                userPreferences.saveUserId(uid)
 
-                Log.d("AuthViewModel", "signInWithGoogle: Sign-in process completed successfully for $userId")
                 _uiState.value = AuthUiState.Success
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "signInWithGoogle: Error during sign-in process", e)
-                _uiState.value = AuthUiState.Error(e.message ?: "Unknown error")
+                Log.e("AuthViewModel", "Google sign-in failed", e)
+                _uiState.value = AuthUiState.Error(e.message ?: "Sign-in failed")
             }
         }
     }
@@ -60,7 +70,6 @@ class AuthViewModel(
         private val userPreferences: UserPreferences
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            Log.d("AuthViewModel.Factory", "create() called for ${modelClass.simpleName}")
             if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
                 return AuthViewModel(repository, userPreferences) as T

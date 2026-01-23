@@ -86,9 +86,23 @@ dependencies {
     implementation "androidx.datastore:datastore-preferences:1.0.0"
 
     // Firebase Auth (Google Sign-In)
-    implementation platform("com.google.firebase:firebase-bom:32.3.1")
-    implementation "com.google.firebase:firebase-auth-ktx"
-    implementation "com.google.android.gms:play-services-auth:20.7.0"
+    //implementation platform("com.google.firebase:firebase-bom:32.3.1")
+//    implementation platform('com.google.firebase:firebase-bom:34.8.0')
+//    implementation "com.google.firebase:firebase-auth-ktx"
+//    implementation "com.google.android.gms:play-services-auth:20.7.0"
+
+
+        // 🔥 Firebase BOM (THIS MUST COME FIRST)
+        implementation platform("com.google.firebase:firebase-bom:33.4.0")
+
+        // 🔐 Firebase Auth (NO VERSION HERE)
+        implementation "com.google.firebase:firebase-auth-ktx"
+
+        // 🔑 Google Sign-In
+        implementation "com.google.android.gms:play-services-auth:21.1.1"
+
+
+
 
     // Testing
     testImplementation 'junit:junit:4.13.2'
