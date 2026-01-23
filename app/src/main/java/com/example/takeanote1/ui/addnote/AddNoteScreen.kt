@@ -1,13 +1,17 @@
 package com.example.takeanote1.ui.addnote
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.takeanote1.ui.home.NotesViewModel
 import com.example.takeanote1.ui.components.AppTopBar
-import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -20,7 +24,9 @@ fun AddNoteScreen(
     var topic by remember { mutableStateOf("General") }
     var reminderTime by remember { mutableStateOf<Long?>(null) }
 
-    val topics = listOf("General", "Work", "Personal", "Shopping", "Health")
+    val topics = listOf("General", "Work", "Personal", "Shopping", "Health", "Ideas")
+
+    val scrollState = rememberScrollState()
 
     Scaffold(
         topBar = {
@@ -29,25 +35,30 @@ fun AddNoteScreen(
                 showBack = true,
                 onBackClick = onBack
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Title") },
+                placeholder = { Text("Enter note title") },
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text("Select Topic:", style = MaterialTheme.typography.labelLarge)
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scrollState),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 topics.forEach { t ->
@@ -58,20 +69,27 @@ fun AddNoteScreen(
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = content,
                 onValueChange = { content = it },
                 label = { Text("Content") },
+                placeholder = { Text("Write your note here...") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
                 minLines = 5
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
+            reminderTime?.let {
+                val formattedTime = SimpleDateFormat("EEE, MMM d, hh:mm a", Locale.getDefault()).format(it)
+                Text(
+                    text = "Reminder set: $formattedTime",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
             Button(
                 onClick = {
                     val cal = Calendar.getInstance()
@@ -79,19 +97,20 @@ fun AddNoteScreen(
                     reminderTime = cal.timeInMillis
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                )
             ) {
-                Text(if (reminderTime == null) "Set Today Reminder" else "Reminder Set")
+                Text(if (reminderTime == null) "Set Reminder" else "Update Reminder")
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            
+            Spacer(modifier = Modifier.height(8.dp))
+
             Button(
                 onClick = {
-                    if (title.isNotBlank() && content.isNotBlank()) {
-                        viewModel.addNote(title, content, topic, reminderTime)
-                        onBack()
-                    }
+                    viewModel.addNote(title, content, topic, reminderTime)
+                    onBack()
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = title.isNotBlank() && content.isNotBlank()

@@ -18,7 +18,7 @@ class GoogleSignInManager(activity: Activity) {
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            .requestIdToken("WebClientId") // <-- replace with Firebase Web client ID
+            .requestIdToken("") // <-- replace with Firebase Web client ID
             .build()
 
         googleSignInClient = GoogleSignIn.getClient(activity, gso)
