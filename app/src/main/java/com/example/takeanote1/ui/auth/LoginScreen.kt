@@ -26,6 +26,8 @@ sealed class AuthUiState {
     object Idle : AuthUiState()
     object Loading : AuthUiState()
     object Success : AuthUiState()
+    object LoggedOut : AuthUiState()         // for logout
+    object SwitchAccountRequired : AuthUiState() // for switch account
     data class Error(val message: String) : AuthUiState()
 }
 
@@ -67,17 +69,12 @@ fun LoginScreen(
             onLoginSuccess()
         }
     }
-    LaunchedEffect(Unit) {
-        viewModel.resetUiState()
-    }
 
     LoginContent(
         uiState = uiState,
         onGoogleLoginClick = {
-            Log.d("LoginScreen", "onGoogleLoginClick: Clearing Google session first")
-            googleSignInManager.signOutAndRevoke {
-                launcher.launch(googleSignInManager.signIn())
-            }
+            Log.d("LoginScreen", "onGoogleLoginClick: Launching Google Sign-In intent")
+            launcher.launch(googleSignInManager.signIn())
         }
     )
 }

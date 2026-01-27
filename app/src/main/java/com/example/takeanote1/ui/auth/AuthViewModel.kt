@@ -1,9 +1,11 @@
 package com.example.takeanote1.ui.auth
 
+import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.takeanote1.data.GoogleSignInManager
 import com.example.takeanote1.data.datastore.UserPreferences
 import com.example.takeanote1.data.local.entity.UserEntity
 import com.example.takeanote1.data.repository.NotesRepository
@@ -69,17 +71,26 @@ class AuthViewModel(
     }
 
     // for clearing the firebase session
-    fun logout(onLoggedOut: () -> Unit) {
+
+    /** Simple logout: clears session but keeps Google account cached */
+    fun logoutKeepAccount() {
         viewModelScope.launch {
-            Log.d("AuthViewModel", "Logging out user")
-
-            FirebaseAuth.getInstance().signOut()
-
+            auth.signOut()
             userPreferences.clearUserId()
-            _uiState.value = AuthUiState.Idle
-            onLoggedOut()
+            _uiState.value = AuthUiState.LoggedOut
         }
     }
+
+    fun switchAccount(activity: Activity) {
+        val googleManager = GoogleSignInManager(activity)
+        viewModelScope.launch {
+            googleManager.signOutAndRevoke {
+                _uiState.value = AuthUiState.SwitchAccountRequired
+            }
+        }
+    }
+
+
 
 
     class Factory(
