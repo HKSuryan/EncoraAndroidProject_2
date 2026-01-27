@@ -25,7 +25,17 @@ class GoogleSignInManager(activity: Activity) {
         googleSignInClient = GoogleSignIn.getClient(activity, gso)
     }
 
+    // For the switch account feature
+    fun signOutAndRevoke(onComplete: () -> Unit = {}) {
+        Log.d("GoogleSignInManager", "Signing out and revoking access")
 
+        googleSignInClient.signOut().addOnCompleteListener {
+            googleSignInClient.revokeAccess().addOnCompleteListener {
+                Log.d("GoogleSignInManager", "Google account fully cleared")
+                onComplete()
+            }
+        }
+    }
 
     /** Launch Google Sign-In intent */
     fun signIn(): Intent {
@@ -63,8 +73,7 @@ class GoogleSignInManager(activity: Activity) {
             onError(e.message ?: "Google sign-in failed")
         }
     }
-
-    /** Optional: sign out */
+    // Sign Out
     fun signOut(onComplete: () -> Unit = {}) {
         Log.d("GoogleSignInManager", "signOut: Signing out user")
         googleSignInClient.signOut().addOnCompleteListener {

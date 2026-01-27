@@ -46,7 +46,14 @@ fun AppNavGraph() {
             HomeScreen(
                 viewModel = notesViewModel,
                 onAddNoteClick = { navController.navigate("add_note") },
-                onHistoryClick = { navController.navigate("completed") }
+                onHistoryClick = { navController.navigate("completed") },
+                onSwitchAccount = {
+                    authViewModel.logout {
+                        navController.navigate("login") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                    }
+                }
             )
         }
         composable("add_note") {

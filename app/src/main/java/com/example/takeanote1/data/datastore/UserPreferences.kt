@@ -25,6 +25,12 @@ class UserPreferences(private val context: Context) {
         }
         Log.d(TAG, "saveUserId: Successfully saved uid: $uid")
     }
+    suspend fun clearUserId() {
+        Log.d(TAG, "clearUserId: Clearing userId")
+        context.dataStore.edit { preferences ->
+            preferences.remove(USER_ID)
+        }
+    }
 
     // Observe userId
     val userIdFlow: Flow<String?> =

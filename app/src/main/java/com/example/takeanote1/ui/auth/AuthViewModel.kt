@@ -64,6 +64,23 @@ class AuthViewModel(
             }
         }
     }
+    fun resetUiState() {
+        _uiState.value = AuthUiState.Idle
+    }
+
+    // for clearing the firebase session
+    fun logout(onLoggedOut: () -> Unit) {
+        viewModelScope.launch {
+            Log.d("AuthViewModel", "Logging out user")
+
+            FirebaseAuth.getInstance().signOut()
+
+            userPreferences.clearUserId()
+            _uiState.value = AuthUiState.Idle
+            onLoggedOut()
+        }
+    }
+
 
     class Factory(
         private val repository: NotesRepository,
