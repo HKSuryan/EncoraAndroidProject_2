@@ -26,7 +26,8 @@ class NotesViewModel(
 
     private val _completedNotes = MutableStateFlow<List<NoteEntity>>(emptyList())
     val completedNotes: StateFlow<List<NoteEntity>> = _completedNotes
-
+    private val _selectedCompletedNotes = MutableStateFlow<Set<String>>(emptySet())
+    val selectedCompletedNotes: StateFlow<Set<String>> = _selectedCompletedNotes
     private val _todayReminders = MutableStateFlow<List<NoteEntity>>(emptyList())
     val todayReminders: StateFlow<List<NoteEntity>> = _todayReminders
 
@@ -99,6 +100,35 @@ class NotesViewModel(
             Log.d(TAG, "markAsCompleted: Note $noteId updated")
         }
     }
+    fun deleteAllCompletedNotes() {
+        Log.d(TAG, "deleteAllCompletedNotes: Deleting all completed notes")
+        viewModelScope.launch {
+            val uid = userPreferences.userIdFlow.first()
+            uid?.let {
+                repository.deleteAllCompletedNotes(it)
+                Log.d(TAG, "deleteAllCompletedNotes: Completed")
+            } ?: Log.w(TAG, "deleteAllCompletedNotes: UID is null")
+        }
+    }
+    fun toggleCompletedNoteSelection(noteId: String) {
+        _selectedCompletedNotes.value =
+            if (_selectedCompletedNotes.value.contains(noteId))
+                _selectedCompletedNotes.value - noteId
+            else
+                _selectedCompletedNotes.value + noteId
+    }
+    fun deleteSelectedCompletedNotes() {
+        Log.d(TAG, "deleteSelectedCompletedNotes: Deleting selected completed notes")
+        viewModelScope.launch {
+            val uid = userPreferences.userIdFlow.first()
+            uid?.let {
+                repository.deleteSelectedCompletedNotes(it, _selectedCompletedNotes.value.toList())
+                _selectedCompletedNotes.value = emptySet()
+                Log.d(TAG, "deleteSelectedCompletedNotes: Completed")
+            }
+        }
+    }
+
 
     class Factory(
         private val repository: NotesRepository,

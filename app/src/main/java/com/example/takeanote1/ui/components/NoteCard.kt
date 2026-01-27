@@ -1,5 +1,6 @@
 package com.example.takeanote1.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,26 +16,52 @@ import java.util.*
 fun NoteCard(
     note: NoteEntity,
     onCompleteClick: () -> Unit = {},
-    showCompleteButton: Boolean = true
-) {
+    showCompleteButton: Boolean = true,
+    isSelected: Boolean = false,
+    onClick: (() -> Unit)? = null
+){
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(8.dp)
+             ,
+
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+            else
+                MaterialTheme.colorScheme.surface
+        ),
+
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
+    )
+    {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
-                Text(
-                    text = note.topic,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+
+                    //  Checkbox for completed notes screen
+                    if (!showCompleteButton) {
+                        Checkbox(
+                            checked = isSelected,
+                            onCheckedChange = { onClick?.invoke() }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    Text(
+                        text = note.topic,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 val date = SimpleDateFormat("dd MMM, yyyy", Locale.getDefault()).format(Date(note.createdAt))
                 Text(
                     text = date,

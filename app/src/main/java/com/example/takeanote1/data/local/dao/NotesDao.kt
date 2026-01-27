@@ -27,4 +27,10 @@ interface NotesDao {
 
     @Query("UPDATE notes SET isCompleted = :isCompleted WHERE id = :noteId")
     suspend fun updateNoteCompletion(noteId: String, isCompleted: Boolean)
+
+    @Query("DELETE FROM notes WHERE userId = :uid AND isCompleted = 1")
+    suspend fun deleteCompletedNotes(uid: String)
+
+    @Query("DELETE FROM notes WHERE userId = :uid AND id IN (:ids)")
+    suspend fun deleteNotesByIds(uid: String, ids: List<String>)
 }

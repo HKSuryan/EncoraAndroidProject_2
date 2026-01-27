@@ -74,4 +74,13 @@ class NotesRepository(
             Log.d(TAG, "getTodayReminders: Found ${notes.size} reminders for today")
         }
     }
+    suspend fun deleteAllCompletedNotes(uid: String) {
+        Log.d(TAG, "deleteAllCompletedNotes: Deleting completed notes for UID: $uid")
+        notesDao.deleteCompletedNotes(uid)
+        Log.d(TAG, "deleteAllCompletedNotes: Deleted from Room")
+    }
+    suspend fun deleteSelectedCompletedNotes(uid: String, ids: List<String>) {
+        Log.d(TAG, "deleteSelectedCompletedNotes: Deleting ${ids.size} notes")
+        notesDao.deleteNotesByIds(uid, ids)
+    }
 }

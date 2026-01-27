@@ -19,7 +19,7 @@ class GoogleSignInManager(activity: Activity) {
         Log.d("GoogleSignInManager", "init: Initializing GoogleSignInOptions and Client")
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            .requestIdToken(activity.getString(R.string.default_web_client_id))
+            .requestIdToken("729467445331-hua8dq2g9f8n230nb6vaju8reg6h4hdv.apps.googleusercontent.com")
             .build()
 
         googleSignInClient = GoogleSignIn.getClient(activity, gso)
