@@ -17,7 +17,8 @@ import com.example.takeanote1.ui.components.AppTopBar
 @Composable
 fun CompletedNotesScreen(
     viewModel: NotesViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEditNoteClick: (String) -> Unit // Kept for NavGraph compatibility, but not used for NoteCard
 ) {
     val completedNotes by viewModel.completedNotes.collectAsState()
 
@@ -49,7 +50,9 @@ fun CompletedNotesScreen(
                 items(completedNotes) { note ->
                     NoteCard(
                         note = note,
-                        showCompleteButton = false
+                        showCompleteButton = false,
+                        showEditButton = false, // Hide edit for completed notes
+                        onDeleteClick = { viewModel.deleteNote(note.id) }
                     )
                 }
             }

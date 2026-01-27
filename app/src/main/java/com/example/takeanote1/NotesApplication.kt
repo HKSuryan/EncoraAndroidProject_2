@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.example.takeanote1.data.datastore.UserPreferences
 import com.example.takeanote1.data.local.database.NotesDatabase
 import com.example.takeanote1.data.repository.NotesRepository
+import com.example.takeanote1.data.repository.WorkManagerNotificationRepository
 
 class NotesApplication : Application() {
 
@@ -20,5 +21,9 @@ class NotesApplication : Application() {
 
     val userPreferences by lazy {
         UserPreferences(this)
+    }
+
+    val notificationRepository by lazy {
+        WorkManagerNotificationRepository(this)
     }
 }
