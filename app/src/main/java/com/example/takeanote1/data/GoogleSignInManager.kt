@@ -3,6 +3,8 @@ package com.example.takeanote1.data
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
+import com.example.takeanote1.R
+import com.example.takeanote1.utils.Constants
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -15,14 +17,14 @@ class GoogleSignInManager(activity: Activity) {
 
     init {
         Log.d("GoogleSignInManager", "init: Initializing GoogleSignInOptions and Client")
-
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            .requestIdToken("") // <-- replace with Firebase Web client ID
+            .requestIdToken(activity.getString(R.string.default_web_client_id))
             .build()
 
         googleSignInClient = GoogleSignIn.getClient(activity, gso)
     }
+
 
 
     /** Launch Google Sign-In intent */
