@@ -1,4 +1,5 @@
 # EncoraAndroidProject_2
+```mermaid
 flowchart TD
     A[App Launch] --> B[LoginScreen]
 
