@@ -65,7 +65,7 @@ fun AppNavGraph() {
                 authViewModel = authViewModel,  // pass auth VM for logout & switch account
                 onAddNoteClick = { navController.navigate("add_note") },
                 onHistoryClick = { navController.navigate("completed") },
-                onRemindersClick = { navController.navigate("reminders")}
+                onRemindersClick = { navController.navigate("reminders")},
                 onLoginNavigate = {             // callback after logout or account switch
                     navController.navigate("login") {
                         popUpTo("home") { inclusive = true }

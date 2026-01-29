@@ -30,7 +30,7 @@ fun HomeScreen(
     authViewModel: AuthViewModel,              // Added ViewModel for auth actions
     onAddNoteClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    onRemindersClick: () -> Unit
+    onRemindersClick: () -> Unit,
     onEditNoteClick: (String) -> Unit, // Pass noteId to edit screen
     onLoginNavigate: () -> Unit                // Added navigation callback
 ) {

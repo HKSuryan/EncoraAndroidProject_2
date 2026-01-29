@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.takeanote1.data.local.entity.Reminder
@@ -26,6 +27,7 @@ fun RemindersListScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -75,7 +77,7 @@ fun RemindersListScreen(
                             viewModel.markReminderComplete(reminder.id)
                         },
                         onDeleteClick = { reminder ->
-                            viewModel.deleteReminder(reminder.id)
+                            viewModel.deleteReminder(reminder.id, context)
                         }
                     )
                 }

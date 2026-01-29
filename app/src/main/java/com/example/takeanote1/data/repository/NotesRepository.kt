@@ -128,6 +128,8 @@ class NotesRepository(
 
     suspend fun getPendingReminders(currentTime: Long): List<Reminder> {
         return reminderDao.getPendingReminders(currentTime)
+    }
+
     suspend fun getNoteById(noteId: String): NoteEntity? {
         Log.d(TAG, "getNoteById: Fetching note $noteId")
         return notesDao.getNoteById(noteId)
