@@ -2,8 +2,10 @@ package com.example.takeanote1.data.repository
 
 import android.util.Log
 import com.example.takeanote1.data.local.dao.NotesDao
+import com.example.takeanote1.data.local.dao.ReminderDao
 import com.example.takeanote1.data.local.dao.UserDao
 import com.example.takeanote1.data.local.entity.NoteEntity
+import com.example.takeanote1.data.local.entity.Reminder
 import com.example.takeanote1.data.local.entity.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
@@ -11,7 +13,8 @@ import java.util.Calendar
 
 class NotesRepository(
     private val notesDao: NotesDao,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val reminderDao: ReminderDao
 ) {
     private val TAG = "NotesRepository"
 
@@ -94,6 +97,37 @@ class NotesRepository(
         }
     }
 
+    // Reminder operations
+    suspend fun insertReminder(reminder: Reminder): Long {
+        return reminderDao.insertReminder(reminder)
+    }
+
+    suspend fun updateReminder(reminder: Reminder) {
+        reminderDao.updateReminder(reminder)
+    }
+
+    suspend fun deleteReminder(reminderId: Int) {
+        reminderDao.deleteReminder(reminderId)
+    }
+
+    suspend fun getReminderById(reminderId: Int): Reminder? {
+        return reminderDao.getReminderById(reminderId)
+    }
+
+    fun getActiveReminders(userId: String): Flow<List<Reminder>> {
+        return reminderDao.getActiveReminders(userId)
+    }
+
+    fun getCompletedReminders(userId: String): Flow<List<Reminder>> {
+        return reminderDao.getCompletedReminders(userId)
+    }
+
+    fun getRemindersByNote(noteId: Int): Flow<List<Reminder>> {
+        return reminderDao.getRemindersByNote(noteId)
+    }
+
+    suspend fun getPendingReminders(currentTime: Long): List<Reminder> {
+        return reminderDao.getPendingReminders(currentTime)
     suspend fun getNoteById(noteId: String): NoteEntity? {
         Log.d(TAG, "getNoteById: Fetching note $noteId")
         return notesDao.getNoteById(noteId)

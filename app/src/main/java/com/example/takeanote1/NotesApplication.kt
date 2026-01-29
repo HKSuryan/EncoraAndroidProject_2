@@ -16,7 +16,11 @@ class NotesApplication : Application() {
     }
 
     val repository by lazy {
-        NotesRepository(database.notesDao(), database.userDao())
+        NotesRepository(
+            database.notesDao(),
+            database.userDao(),
+            database.reminderDao()
+        )
     }
 
     val userPreferences by lazy {

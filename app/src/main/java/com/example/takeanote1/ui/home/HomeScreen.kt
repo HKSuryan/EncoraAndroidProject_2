@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -29,6 +30,7 @@ fun HomeScreen(
     authViewModel: AuthViewModel,              // Added ViewModel for auth actions
     onAddNoteClick: () -> Unit,
     onHistoryClick: () -> Unit,
+    onRemindersClick: () -> Unit
     onEditNoteClick: (String) -> Unit, // Pass noteId to edit screen
     onLoginNavigate: () -> Unit                // Added navigation callback
 ) {
@@ -57,7 +59,16 @@ fun HomeScreen(
                 actions = {
                     // History button
                     IconButton(onClick = onHistoryClick) {
-                        Icon(Icons.Default.History, contentDescription = "History")
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = "History"
+                        )
+                    }
+                    IconButton(onClick = onRemindersClick) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Reminders"
+                        )
                     }
 
                     // Logout but keep account cached
