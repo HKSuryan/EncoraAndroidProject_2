@@ -3,8 +3,8 @@ package com.example.takeanote1.data
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
+import androidx.compose.ui.res.stringResource
 import com.example.takeanote1.R
-import com.example.takeanote1.utils.Constants
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -62,7 +62,7 @@ class GoogleSignInManager(activity: Activity) {
                 onError("Google account not found")
             }
         } catch (e: ApiException) {
-            // Common codes: 
+            // Common codes:
             // 10: DEVELOPER_ERROR (Usually SHA-1 mismatch or wrong package name)
             // 12500: SIGN_IN_FAILED
             // 7: NETWORK_ERROR

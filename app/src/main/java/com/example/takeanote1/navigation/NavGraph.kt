@@ -4,12 +4,14 @@ import android.app.Activity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.takeanote1.NotesApplication
-import com.example.takeanote1.ui.auth.LoginScreen
 import com.example.takeanote1.ui.auth.AuthViewModel
+import com.example.takeanote1.ui.auth.LoginScreen
 import com.example.takeanote1.ui.home.HomeScreen
 import com.example.takeanote1.ui.home.NotesViewModel
 import com.example.takeanote1.ui.addnote.AddNoteScreen
@@ -28,7 +30,11 @@ fun AppNavGraph() {
     )
 
     val notesViewModel: NotesViewModel = viewModel(
-        factory = NotesViewModel.Factory(app.repository, app.userPreferences)
+        factory = NotesViewModel.Factory(
+            app.repository,
+            app.userPreferences,
+            app.notificationRepository
+        )
     )
 
     NavHost(
@@ -46,8 +52,6 @@ fun AppNavGraph() {
                 }
             )
         }
-
-        // ---------------- HOME SCREEN ----------------
         composable("home") {
             HomeScreen(
                 viewModel = notesViewModel,
@@ -58,14 +62,35 @@ fun AppNavGraph() {
                     navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
                     }
-                }
+                },
+
+                onEditNoteClick = { noteId -> navController.navigate("add_note/$noteId") }
+            )
+        }
+
+        // Add / Edit Note
+        composable(
+            route = "add_note/{noteId}",
+            arguments = listOf(navArgument("noteId") {
+                type = NavType.StringType
+                defaultValue = "" // empty = new note
+            })
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getString("noteId")?.takeIf { it.isNotEmpty() }
+            AddNoteScreen(
+                viewModel = notesViewModel,
+                noteId = noteId,
+                onBack = { navController.popBackStack() }
             )
         }
 
         // ---------------- ADD NOTE SCREEN ----------------
+
+        // Add Note (without id)
         composable("add_note") {
             AddNoteScreen(
                 viewModel = notesViewModel,
+                noteId = null,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -74,7 +99,8 @@ fun AppNavGraph() {
         composable("completed") {
             CompletedNotesScreen(
                 viewModel = notesViewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onEditNoteClick = { noteId -> navController.navigate("add_note/$noteId") }
             )
         }
     }

@@ -29,6 +29,7 @@ fun HomeScreen(
     authViewModel: AuthViewModel,              // Added ViewModel for auth actions
     onAddNoteClick: () -> Unit,
     onHistoryClick: () -> Unit,
+    onEditNoteClick: (String) -> Unit, // Pass noteId to edit screen
     onLoginNavigate: () -> Unit                // Added navigation callback
 ) {
 
@@ -48,6 +49,8 @@ fun HomeScreen(
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             AppTopBar(
                 title = "My Notes",
@@ -78,10 +81,10 @@ fun HomeScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(8.dp)
+                .padding(padding),
+            contentPadding = PaddingValues(8.dp)
         ) {
-            // Today's reminders
+            // ------------------- Today's Reminders -------------------
             if (todayReminders.isNotEmpty()) {
                 item {
                     Text(
@@ -90,16 +93,20 @@ fun HomeScreen(
                         modifier = Modifier.padding(8.dp)
                     )
                 }
+
                 items(todayReminders) { note ->
                     NoteCard(
                         note = note,
-                        onCompleteClick = { viewModel.markAsCompleted(note.id) }
+                        onCompleteClick = { viewModel.markAsCompleted(note.id) },
+                        onEditClick = { onEditNoteClick(note.id) },
+                        onDeleteClick = { viewModel.deleteNote(note.id) }
                     )
                 }
+
                 item { Spacer(modifier = Modifier.height(16.dp)) }
             }
 
-            // Active notes
+            // ------------------- Active Notes -------------------
             item {
                 Text(
                     text = "Active Notes",
@@ -111,7 +118,9 @@ fun HomeScreen(
             if (activeNotes.isEmpty()) {
                 item {
                     Box(
-                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
                         contentAlignment = androidx.compose.ui.Alignment.Center
                     ) {
                         Text("No active notes. Create one!")
@@ -121,7 +130,9 @@ fun HomeScreen(
                 items(activeNotes) { note ->
                     NoteCard(
                         note = note,
-                        onCompleteClick = { viewModel.markAsCompleted(note.id) }
+                        onCompleteClick = { viewModel.markAsCompleted(note.id) },
+                        onEditClick = { onEditNoteClick(note.id) },
+                        onDeleteClick = { viewModel.deleteNote(note.id) }
                     )
                 }
             }
