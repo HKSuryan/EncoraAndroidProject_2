@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -20,7 +21,8 @@ import com.example.takeanote1.ui.components.AppTopBar
 fun HomeScreen(
     viewModel: NotesViewModel,
     onAddNoteClick: () -> Unit,
-    onHistoryClick: () -> Unit
+    onHistoryClick: () -> Unit,
+    onRemindersClick: () -> Unit
 ) {
     val activeNotes by viewModel.activeNotes.collectAsState()
     val todayReminders by viewModel.todayReminders.collectAsState()
@@ -31,7 +33,16 @@ fun HomeScreen(
                 title = "My Notes",
                 actions = {
                     IconButton(onClick = onHistoryClick) {
-                        Icon(Icons.Default.History, contentDescription = "History")
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = "History"
+                        )
+                    }
+                    IconButton(onClick = onRemindersClick) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Reminders"
+                        )
                     }
                 }
             )
