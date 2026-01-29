@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">TakeANote1</string>
+    <string name="app_name">Notesy</string>
+    <string name="sign_in_google">Sign in/Sign up with Google</string>
+    <string name="error_google_sign_in">Error signing in with Google.</string>
+    <string name="welcome">Welcome to Notesy!</string>
+    <string name="keep_notes_safe">Keep your notes safe.</string>
+    <string name="get_reminders">Get Reminders for the notes</string>
+    <string name="organize_thoughts">Organize your thoughts.</string>
+    <string name="start_journey">Start your journey today!</string>
 </resources>

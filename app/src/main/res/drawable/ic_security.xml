@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Main blue shield -->
+    <path
+        android:fillColor="#2979FF"
+        android:pathData="
+            M12,1
+            L3,5
+            v6
+            c0,5 3.8,9.8 9,11
+            c5.2,-1.2 9,-6 9,-11
+            V5
+            l-9,-4z" />
+
+    <!-- Gray inner shade -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="
+            M12,3
+            L5,6
+            v4.8
+            c0,4.2 3.1,8.2 7,9.4
+            c3.9,-1.2 7,-5.2 7,-9.4
+            V6
+            l-7,-3z" />
+</vector>
