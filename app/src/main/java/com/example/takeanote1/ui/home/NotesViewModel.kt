@@ -7,16 +7,19 @@ import androidx.lifecycle.viewModelScope
 import com.example.takeanote1.data.datastore.UserPreferences
 import com.example.takeanote1.data.local.entity.NoteEntity
 import com.example.takeanote1.data.repository.NotesRepository
+import com.example.takeanote1.data.repository.WorkManagerNotificationRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import java.util.UUID
 
 class NotesViewModel(
     private val repository: NotesRepository,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val notificationRepository: WorkManagerNotificationRepository
 ) : ViewModel() {
 
     private val TAG = "NotesViewModel"
@@ -32,37 +35,34 @@ class NotesViewModel(
 
     init {
         Log.d(TAG, "init: Initializing NotesViewModel")
-        
+
+        // Observe active notes
         viewModelScope.launch {
             userPreferences.userIdFlow.collectLatest { uid ->
-                Log.d(TAG, "collectLatest: Received UID: $uid for Active Notes")
                 uid?.let {
                     repository.getActiveNotes(it).collect { notes ->
-                        Log.d(TAG, "getActiveNotes: Collected ${notes.size} notes for $it")
                         _activeNotes.value = notes
                     }
                 }
             }
         }
-        
+
+        // Observe completed notes
         viewModelScope.launch {
             userPreferences.userIdFlow.collectLatest { uid ->
-                Log.d(TAG, "collectLatest: Received UID: $uid for Completed Notes")
                 uid?.let {
                     repository.getCompletedNotes(it).collect { notes ->
-                        Log.d(TAG, "getCompletedNotes: Collected ${notes.size} notes for $it")
                         _completedNotes.value = notes
                     }
                 }
             }
         }
 
+        // Observe today reminders
         viewModelScope.launch {
             userPreferences.userIdFlow.collectLatest { uid ->
-                Log.d(TAG, "collectLatest: Received UID: $uid for Today Reminders")
                 uid?.let {
                     repository.getTodayReminders(it).collect { notes ->
-                        Log.d(TAG, "getTodayReminders: Collected ${notes.size} notes for $it")
                         _todayReminders.value = notes
                     }
                 }
@@ -70,45 +70,101 @@ class NotesViewModel(
         }
     }
 
+    /** Add a new note */
     fun addNote(title: String, content: String, topic: String, reminderTime: Long? = null) {
-        Log.d(TAG, "addNote: Adding note with title: $title")
         viewModelScope.launch {
-            val uid = userPreferences.userIdFlow.first()
-            Log.d(TAG, "addNote: Using UID: $uid")
-            uid?.let {
-                val note = NoteEntity(
-                    id = UUID.randomUUID().toString(),
-                    userId = it,
-                    title = title,
-                    content = content,
-                    topic = topic,
-                    isCompleted = false,
-                    createdAt = System.currentTimeMillis(),
-                    reminderTime = reminderTime
-                )
-                repository.addNote(note)
-                Log.d(TAG, "addNote: Note added successfully")
-            } ?: Log.w(TAG, "addNote: UID is null, cannot add note")
+            val uid = userPreferences.userIdFlow.first() ?: return@launch
+            val noteId = UUID.randomUUID().toString()
+            val note = NoteEntity(
+                id = noteId,
+                userId = uid,
+                title = title,
+                content = content,
+                topic = topic,
+                isCompleted = false,
+                createdAt = System.currentTimeMillis(),
+                reminderTime = reminderTime
+            )
+            repository.addNote(note)
+
+            // Schedule notification if reminderTime is valid
+            reminderTime?.let { time ->
+                scheduleNotification(noteId, title, content, time)
+            }
         }
     }
 
+    /** Update existing note */
+    fun updateNote(
+        noteId: String,
+        title: String,
+        content: String,
+        topic: String,
+        reminderTime: Long?
+    ) {
+        viewModelScope.launch {
+            val existingNote = repository.getNoteById(noteId) ?: return@launch
+            val updatedNote = existingNote.copy(
+                title = title,
+                content = content,
+                topic = topic,
+                reminderTime = reminderTime
+            )
+            repository.updateNote(updatedNote)
+
+            // Cancel old notification
+            notificationRepository.cancelNotification(noteId)
+
+            // Schedule new notification if valid
+            reminderTime?.let { time ->
+                scheduleNotification(noteId, title, content, time)
+            }
+        }
+    }
+
+    /** Delete a note */
+    fun deleteNote(noteId: String) {
+        viewModelScope.launch {
+            repository.deleteNote(noteId)
+            // Cancel any scheduled notifications
+            notificationRepository.cancelNotification(noteId)
+        }
+    }
+
+    /** Mark note as completed */
     fun markAsCompleted(noteId: String) {
-        Log.d(TAG, "markAsCompleted: Marking note $noteId as completed")
         viewModelScope.launch {
             repository.updateNoteCompletion(noteId, true)
-            Log.d(TAG, "markAsCompleted: Note $noteId updated")
+            // Cancel any scheduled notifications
+            notificationRepository.cancelNotification(noteId)
         }
     }
 
+    /** Schedule a WorkManager notification */
+    private fun scheduleNotification(noteId: String, title: String, content: String, reminderTime: Long) {
+        val now = System.currentTimeMillis()
+        if (reminderTime <= now) {
+            Log.w(TAG, "scheduleNotification: Reminder time is in the past. Skipping note $noteId")
+            return
+        }
+        notificationRepository.scheduleNotificationAt(noteId, title, content, reminderTime)
+    }
+
+    /** Fetch note by ID */
+    suspend fun getNoteById(noteId: String): NoteEntity? {
+        return repository.getNoteById(noteId)
+    }
+
+    /** ViewModel Factory */
     class Factory(
         private val repository: NotesRepository,
-        private val userPreferences: UserPreferences
+        private val userPreferences: UserPreferences,
+        private val notificationRepository: WorkManagerNotificationRepository
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            Log.d("NotesViewModelFactory", "create: Creating NotesViewModel")
             if (modelClass.isAssignableFrom(NotesViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
-                return NotesViewModel(repository, userPreferences) as T
+                return NotesViewModel(repository, userPreferences, notificationRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

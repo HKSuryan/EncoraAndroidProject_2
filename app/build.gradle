@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace 'com.example.takeanote1'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.example.takeanote1"
@@ -112,8 +112,12 @@ dependencies {
 
     // Navigation
     implementation "androidx.navigation:navigation-compose:2.7.6"
+    implementation platform("com.google.firebase:firebase-bom:32.3.1")
+    implementation "com.google.firebase:firebase-auth-ktx"
+    implementation "com.google.android.gms:play-services-auth:20.7.0"
 
 
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
     // Testing
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

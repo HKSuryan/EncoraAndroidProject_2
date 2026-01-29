@@ -34,11 +34,15 @@ fun AppTopBar(
         ),
         title = {
             Text(
+//                text = title,
+//                maxLines = 1,
+//                overflow = TextOverflow.Ellipsis,
+//                style = MaterialTheme.typography.headlineLarge,
+//                fontWeight = FontWeight.Bold
                 text = title,
+                style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold
+                overflow = TextOverflow.Ellipsis
             )
         },
         navigationIcon = if (showBack) {

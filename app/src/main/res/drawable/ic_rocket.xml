@@ -4,66 +4,83 @@
     android:viewportWidth="100"
     android:viewportHeight="120">
 
-    <!-- Rocket Body (smoother curves) -->
+    <!-- Body -->
     <path
-        android:fillColor="#9E9E9E"
+        android:fillColor="#ECEFF1"
         android:pathData="
-            M 50,15
-            C 32,28 32,55 50,88
-            C 68,55 68,28 50,15
+            M40,20
+            L60,20
+            L60,85
+            L40,85
             Z"/>
 
-    <!-- Window (perfect circle with subtle gradient effect via clip) -->
+    <!-- Nose -->
     <path
-        android:fillColor="#BBDEFB"
+        android:fillColor="#E53935"
         android:pathData="
-            M 50,42
-            m -7,0
-            a 7,7 0 1,0 14,0
-            a 7,7 0 1,0 -14,0"/>
+            M40,20
+            Q50,5 60,20
+            Z"/>
 
-    <!-- Window highlight -->
+    <!-- Window outer -->
     <path
-        android:fillColor="#E3F2FD"
+        android:fillColor="#1E88E5"
         android:pathData="
-            M 47,39
-            m -2.5,0
-            a 2.5,2.5 0 1,0 5,0
-            a 2.5,2.5 0 1,0 -5,0"/>
+            M50,45
+            m-7,0
+            a7,7 0 1,0 14,0
+            a7,7 0 1,0 -14,0"/>
 
-    <!-- Left Fin (angled for better aerodynamics) -->
+    <!-- Window inner -->
     <path
-        android:fillColor="#EF5350"
+        android:fillColor="#90CAF9"
         android:pathData="
-            M 38,82 L 24,74 L 35,74 L 38,82 Z"/>
+            M50,45
+            m-4,0
+            a4,4 0 1,0 8,0
+            a4,4 0 1,0 -8,0"/>
 
-    <!-- Right Fin -->
+    <!-- Left fin -->
     <path
-        android:fillColor="#EF5350"
+        android:fillColor="#E53935"
         android:pathData="
-            M 62,82 L 76,74 L 63,74 L 62,82 Z"/>
+            M40,70
+            L25,85
+            L40,85
+            Z"/>
 
-    <!-- Flame base (wider, more realistic) -->
+    <!-- Right fin -->
     <path
-        android:fillColor="#FF8F00"
+        android:fillColor="#E53935"
         android:pathData="
-            M 43,88 L 57,88
-            Q 52,98 48,105
-            Q 52,98 57,88 Z"/>
+            M60,70
+            L75,85
+            L60,85
+            Z"/>
 
-    <!-- Flame middle (orange glow) -->
+    <!-- Engine -->
     <path
-        android:fillColor="#FFB300"
+        android:fillColor="#546E7A"
         android:pathData="
-            M 45.5,89 L 54.5,89
-            Q 51,95 49,99
-            Q 51,95 54.5,89 Z"/>
+            M44,85
+            L56,85
+            L56,92
+            L44,92
+            Z"/>
 
-    <!-- Flame tip (bright yellow core) -->
+    <!-- Flame outer -->
     <path
-        android:fillColor="#FFF176"
+        android:fillColor="#FF9800"
         android:pathData="
-            M 47.5,90 L 52.5,90
-            L 50,102 Z"/>
+            M44,92
+            Q50,110 56,92
+            Z"/>
 
+    <!-- Flame inner -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="
+            M47,92
+            Q50,104 53,92
+            Z"/>
 </vector>

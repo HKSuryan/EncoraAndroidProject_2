@@ -27,4 +27,23 @@ interface NotesDao {
 
     @Query("UPDATE notes SET isCompleted = :isCompleted WHERE id = :noteId")
     suspend fun updateNoteCompletion(noteId: String, isCompleted: Boolean)
+
+    @Query("SELECT * FROM notes WHERE id = :noteId LIMIT 1")
+    suspend fun getNoteById(noteId: String): NoteEntity?
+
+    @Query("DELETE FROM notes WHERE id = :noteId")
+    suspend fun deleteNoteById(noteId: String)
+
+    @Query("""
+        UPDATE notes 
+        SET title = :title, content = :content, topic = :topic, reminderTime = :reminderTime 
+        WHERE id = :noteId
+    """)
+    suspend fun updateNote(
+        noteId: String,
+        title: String,
+        content: String,
+        topic: String,
+        reminderTime: Long?
+    )
 }

@@ -18,7 +18,7 @@ class NotesRepository(
 ) {
     private val TAG = "NotesRepository"
 
-    // User operations
+    // -------------------- User operations --------------------
     suspend fun saveUser(user: UserEntity) {
         Log.d(TAG, "saveUser: Attempting to save user with ID: ${user.id}")
         userDao.insertUser(user)
@@ -32,7 +32,7 @@ class NotesRepository(
         }
     }
 
-    // Notes operations
+    // -------------------- Notes operations --------------------
     fun getActiveNotes(uid: String): Flow<List<NoteEntity>> {
         Log.d(TAG, "getActiveNotes: Fetching active notes for UID: $uid")
         return notesDao.getActiveNotes(uid).onEach { notes ->
@@ -53,6 +53,25 @@ class NotesRepository(
         Log.d(TAG, "addNote: Note added successfully")
     }
 
+    suspend fun updateNote(note: NoteEntity) {
+        Log.d(TAG, "updateNote: Updating note ${note.id}")
+        notesDao.updateNote(
+            noteId = note.id,
+            title = note.title,
+            content = note.content,
+            topic = note.topic,
+            reminderTime = note.reminderTime
+        )
+        Log.d(TAG, "updateNote: Note ${note.id} updated successfully")
+    }
+
+
+    suspend fun deleteNote(noteId: String) {
+        Log.d(TAG, "deleteNote: Deleting note $noteId")
+        notesDao.deleteNoteById(noteId)
+        Log.d(TAG, "deleteNote: Note $noteId deleted successfully")
+    }
+
     suspend fun updateNoteCompletion(noteId: String, isCompleted: Boolean) {
         Log.d(TAG, "updateNoteCompletion: Updating note $noteId completion to $isCompleted")
         notesDao.updateNoteCompletion(noteId, isCompleted)
@@ -66,7 +85,7 @@ class NotesRepository(
         calendar.set(Calendar.SECOND, 0)
         calendar.set(Calendar.MILLISECOND, 0)
         val startOfDay = calendar.timeInMillis
-        
+
         calendar.set(Calendar.HOUR_OF_DAY, 23)
         calendar.set(Calendar.MINUTE, 59)
         calendar.set(Calendar.SECOND, 59)
@@ -109,5 +128,8 @@ class NotesRepository(
 
     suspend fun getPendingReminders(currentTime: Long): List<Reminder> {
         return reminderDao.getPendingReminders(currentTime)
+    suspend fun getNoteById(noteId: String): NoteEntity? {
+        Log.d(TAG, "getNoteById: Fetching note $noteId")
+        return notesDao.getNoteById(noteId)
     }
 }
