@@ -1,13 +1,16 @@
 package com.example.takeanote1.ui.auth
 
+import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.takeanote1.data.GoogleSignInManager
 import com.example.takeanote1.data.datastore.UserPreferences
 import com.example.takeanote1.data.local.entity.UserEntity
 import com.example.takeanote1.data.repository.NotesRepository
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -16,7 +19,7 @@ class AuthViewModel(
     private val userRepository: NotesRepository,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
-
+    private val auth = FirebaseAuth.getInstance()
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState
 
@@ -54,6 +57,32 @@ class AuthViewModel(
             }
         }
     }
+    fun resetUiState() {
+        _uiState.value = AuthUiState.Idle
+    }
+
+    // for clearing the firebase session
+
+    /** Simple logout: clears session but keeps Google account cached */
+    fun logoutKeepAccount() {
+        viewModelScope.launch {
+            auth.signOut()
+            userPreferences.clearUserId()
+            _uiState.value = AuthUiState.LoggedOut
+        }
+    }
+
+    fun switchAccount(activity: Activity) {
+        val googleManager = GoogleSignInManager(activity)
+        viewModelScope.launch {
+            googleManager.signOutAndRevoke {
+                _uiState.value = AuthUiState.SwitchAccountRequired
+            }
+        }
+    }
+
+
+
 
     class Factory(
         private val repository: NotesRepository,

@@ -26,6 +26,8 @@ sealed class AuthUiState {
     object Idle : AuthUiState()
     object Loading : AuthUiState()
     object Success : AuthUiState()
+    object LoggedOut : AuthUiState()         // for logout
+    object SwitchAccountRequired : AuthUiState() // for switch account
     data class Error(val message: String) : AuthUiState()
 }
 

@@ -1,5 +1,6 @@
 package com.example.takeanote1.navigation
 
+import android.app.Activity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -15,12 +16,14 @@ import com.example.takeanote1.ui.home.HomeScreen
 import com.example.takeanote1.ui.home.NotesViewModel
 import com.example.takeanote1.ui.addnote.AddNoteScreen
 import com.example.takeanote1.ui.completed.CompletedNotesScreen
+import com.example.takeanote1.data.GoogleSignInManager
 
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val app = context.applicationContext as NotesApplication
+    val activity = context as? Activity
 
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModel.Factory(app.repository, app.userPreferences)
@@ -38,20 +41,29 @@ fun AppNavGraph() {
         navController = navController,
         startDestination = "login"
     ) {
+        // ---------------- LOGIN SCREEN ----------------
         composable("login") {
             LoginScreen(
                 viewModel = authViewModel,
                 onLoginSuccess = {
-                    navController.navigate("home") { popUpTo("login") { inclusive = true } }
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
                 }
             )
         }
-
         composable("home") {
             HomeScreen(
                 viewModel = notesViewModel,
+                authViewModel = authViewModel,  // pass auth VM for logout & switch account
                 onAddNoteClick = { navController.navigate("add_note") },
                 onHistoryClick = { navController.navigate("completed") },
+                onLoginNavigate = {             // callback after logout or account switch
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                },
+
                 onEditNoteClick = { noteId -> navController.navigate("add_note/$noteId") }
             )
         }
@@ -72,6 +84,8 @@ fun AppNavGraph() {
             )
         }
 
+        // ---------------- ADD NOTE SCREEN ----------------
+
         // Add Note (without id)
         composable("add_note") {
             AddNoteScreen(
@@ -81,6 +95,7 @@ fun AppNavGraph() {
             )
         }
 
+        // ---------------- COMPLETED NOTES SCREEN ----------------
         composable("completed") {
             CompletedNotesScreen(
                 viewModel = notesViewModel,
