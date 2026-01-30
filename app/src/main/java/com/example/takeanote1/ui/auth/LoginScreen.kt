@@ -6,6 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import com.example.takeanote1.R
 import com.example.takeanote1.data.GoogleSignInManager
@@ -94,75 +97,69 @@ fun LoginContent(
         }
     ) { paddingValues ->
 
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+
+            RotatingQuotesWithIcons(
+                quotesWithIcons = listOf(
+                    stringResource(R.string.welcome) to R.drawable.ic_android,
+                    stringResource(R.string.keep_notes_safe) to R.drawable.ic_security,
+                    stringResource(R.string.get_reminders) to R.drawable.ic_alert,
+                    stringResource(R.string.organize_thoughts) to R.drawable.ic_note,
+                    stringResource(R.string.start_journey) to R.drawable.ic_rocket
+                ),
+                rotationTime = 2000L
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = onGoogleLoginClick,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = uiState !is AuthUiState.Loading
             ) {
-
-                // ------------------- ROTATING QUOTES -------------------
-                RotatingQuotesWithIcons(
-                    quotesWithIcons = listOf(
-                        stringResource(R.string.welcome) to R.drawable.ic_android,
-                        stringResource(R.string.keep_notes_safe) to R.drawable.ic_security,
-                        stringResource(R.string.get_reminders) to R.drawable.ic_alert,
-                        stringResource(R.string.organize_thoughts) to R.drawable.ic_note,
-                        stringResource(R.string.start_journey) to R.drawable.ic_rocket
-                    ),
-                    rotationTime = 2000L
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // ------------------- GOOGLE SIGN-IN BUTTON -------------------
-                Button(
-                    onClick = onGoogleLoginClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = uiState !is AuthUiState.Loading
-                ) {
-                    if (uiState is AuthUiState.Loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
+                if (uiState is AuthUiState.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_google_logo),
+                            contentDescription = "Google",
+                            modifier = Modifier.size(24.dp)
                         )
-                    } else {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Image(
-                                painter = painterResource(R.drawable.ic_google_logo),
-                                contentDescription = "Google",
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = stringResource(R.string.sign_in_google))
-                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = stringResource(R.string.sign_in_google))
                     }
                 }
+            }
 
-                // ------------------- ERROR MESSAGE -------------------
-                if (uiState is AuthUiState.Error) {
-                    Text(
-                        text = (uiState as AuthUiState.Error).message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+            if (uiState is AuthUiState.Error) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = uiState.message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
 }
 
+
 // ------------------- PREVIEW -------------------
 @Composable
-@Preview(showBackground = true, showSystemUi = true)
+@PreviewScreenSizes
 fun LoginScreenPreview() {
     TakeANoteTheme {
         LoginContent(uiState = AuthUiState.Idle, onGoogleLoginClick = {})
