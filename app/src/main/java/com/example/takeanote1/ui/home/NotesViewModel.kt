@@ -1,6 +1,9 @@
 package com.example.takeanote1.ui.home
 
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -21,6 +24,25 @@ class NotesViewModel(
     private val userPreferences: UserPreferences,
     private val notificationRepository: WorkManagerNotificationRepository
 ) : ViewModel() {
+    // In NotesViewModel
+    var draftTitle by mutableStateOf("")
+    var draftContent by mutableStateOf("")
+    var draftTopic by mutableStateOf("General")
+    var draftReminderTime by mutableStateOf<Long?>(null)
+    var draftShowDatePicker by mutableStateOf(false)
+    var draftShowTimePicker by mutableStateOf(false)
+    var draftDateError by mutableStateOf<String?>(null)
+    var draftTimeError by mutableStateOf<String?>(null)
+    fun clearDraft() {
+        draftTitle = ""
+        draftContent = ""
+        draftTopic = "General"
+        draftReminderTime = null
+        draftShowDatePicker = false
+        draftShowTimePicker = false
+        draftDateError = null
+        draftTimeError = null
+    }
 
     private val TAG = "NotesViewModel"
 

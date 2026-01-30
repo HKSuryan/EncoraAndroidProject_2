@@ -56,10 +56,10 @@ fun AppNavGraph() {
             HomeScreen(
                 viewModel = notesViewModel,
                 authViewModel = authViewModel,  // pass auth VM for logout & switch account
-                onAddNoteClick = { navController.navigate("add_note") },
-                onHistoryClick = { navController.navigate("completed") },
+                onAddNoteClick = { notesViewModel.clearDraft() ;navController.navigate("add_note") },
+                onHistoryClick = { notesViewModel.clearDraft() ;navController.navigate("completed") },
                 onLoginNavigate = {             // callback after logout or account switch
-                    navController.navigate("login") {
+                    notesViewModel.clearDraft() ;navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
                     }
                 },
@@ -80,7 +80,7 @@ fun AppNavGraph() {
             AddNoteScreen(
                 viewModel = notesViewModel,
                 noteId = noteId,
-                onBack = { navController.popBackStack() }
+                onBack = { notesViewModel.clearDraft() ;navController.popBackStack() }
             )
         }
 
@@ -91,7 +91,7 @@ fun AppNavGraph() {
             AddNoteScreen(
                 viewModel = notesViewModel,
                 noteId = null,
-                onBack = { navController.popBackStack() }
+                onBack = {notesViewModel.clearDraft() ; navController.popBackStack() }
             )
         }
 
