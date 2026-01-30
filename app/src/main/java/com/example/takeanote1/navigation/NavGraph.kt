@@ -107,7 +107,15 @@ fun AppNavGraph() {
         composable("completed") {
             CompletedNotesScreen(
                 viewModel = notesViewModel,
+                authViewModel = authViewModel,
                 onBack = { navController.popBackStack() },
+                onHistoryClick = { /* Already here */ },
+                onRemindersClick = { navController.navigate("reminders") },
+                onLoginNavigate = {
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                },
                 onEditNoteClick = { noteId -> navController.navigate("add_note/$noteId") }
             )
         }

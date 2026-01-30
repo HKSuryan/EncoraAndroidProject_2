@@ -90,7 +90,7 @@ fun NoteCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 val reminderStr = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(it))
                 Text(
-                    text = "⏰ $reminderStr",
+                    text = "$reminderStr",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary
                 )

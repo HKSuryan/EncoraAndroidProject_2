@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,6 +29,7 @@ fun AppTopBar(
     onLogoutClick: (() -> Unit)? = null,
     onSwitchAccountClick: (() -> Unit)? = null,
     onHistoryClick: (() -> Unit)? = null,
+    onRemindersClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -69,7 +71,8 @@ fun AppTopBar(
 
             val hasMenuActions = onSearchClick != null || onSortClick != null ||
                     onFilterClick != null || onHistoryClick != null ||
-                    onSwitchAccountClick != null || onLogoutClick != null
+                    onRemindersClick != null || onSwitchAccountClick != null || 
+                    onLogoutClick != null
 
             if (hasMenuActions) {
                 Box {
@@ -111,7 +114,18 @@ fun AppTopBar(
                             )
                         }
 
-                        if ((onSearchClick != null || onSortClick != null || onFilterClick != null) &&
+                        if (onRemindersClick != null) {
+                            DropdownMenuItem(
+                                text = { Text("Reminders") },
+                                onClick = {
+                                    showMenu = false
+                                    onRemindersClick.invoke()
+                                },
+                                leadingIcon = { Icon(Icons.Default.Notifications, contentDescription = null) }
+                            )
+                        }
+
+                        if ((onSearchClick != null || onSortClick != null || onFilterClick != null || onRemindersClick != null) &&
                             (onHistoryClick != null || onSwitchAccountClick != null || onLogoutClick != null)
                         ) {
                             HorizontalDivider()

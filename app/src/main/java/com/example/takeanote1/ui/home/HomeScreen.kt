@@ -5,10 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -25,9 +21,11 @@ import androidx.paging.compose.itemKey
 import com.example.takeanote1.ui.auth.AuthUiState
 import com.example.takeanote1.ui.components.NoteCard
 import com.example.takeanote1.ui.components.AppTopBar
+import com.example.takeanote1.ui.components.SortDialog
+import com.example.takeanote1.ui.components.FilterDialog
 import com.example.takeanote1.ui.auth.AuthViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     viewModel: NotesViewModel,
@@ -72,7 +70,8 @@ fun HomeScreen(
                     isGridView = viewType == ViewType.GRID,
                     onLogoutClick = { authViewModel.logoutKeepAccount() },
                     onSwitchAccountClick = { activity?.let { authViewModel.switchAccount(it) } },
-                    onHistoryClick = onHistoryClick
+                    onHistoryClick = onHistoryClick,
+                    onRemindersClick = onRemindersClick
                 )
                 if (showSearchField) {
                     TextField(
@@ -179,79 +178,13 @@ fun HomeScreen(
             onDateRangeSelected = { start, end ->
                 viewModel.setDateRangeFilter(start, end)
                 showFilterDialog = false
+            },
+            currentTopic = viewModel.topicFilter.collectAsState().value,
+            currentDateRange = viewModel.dateRangeFilter.collectAsState().value,
+            onClearFilters = {
+                viewModel.clearFilters()
+                showFilterDialog = false
             }
         )
     }
-}
-
-@Composable
-fun SortDialog(onDismiss: () -> Unit, onSortSelected: (String, String) -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Sort By") },
-        text = {
-            Column {
-                TextButton(onClick = { onSortSelected("createdAt", "DESC") }) {
-                    Text("Date (Newest First)")
-                }
-                TextButton(onClick = { onSortSelected("createdAt", "ASC") }) {
-                    Text("Date (Oldest First)")
-                }
-                TextButton(onClick = { onSortSelected("title", "ASC") }) {
-                    Text("Title (A-Z)")
-                }
-                TextButton(onClick = { onSortSelected("title", "DESC") }) {
-                    Text("Title (Z-A)")
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun FilterDialog(
-    onDismiss: () -> Unit, 
-    onTopicSelected: (String?) -> Unit,
-    onDateRangeSelected: (Long?, Long?) -> Unit
-) {
-    val topics = listOf("All", "Work", "Personal", "Study", "Ideas", "Other")
-    val state = rememberDateRangePickerState()
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Filter Notes") },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text("By Topic:", style = MaterialTheme.typography.labelLarge)
-                topics.forEach { topic ->
-                    TextButton(onClick = { onTopicSelected(topic) }) {
-                        Text(topic)
-                    }
-                }
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                Text("By Date Range:", style = MaterialTheme.typography.labelLarge)
-                DateRangePicker(
-                    state = state,
-                    modifier = Modifier.height(400.dp),
-                    title = null,
-                    headline = null,
-                    showModeToggle = false
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onDateRangeSelected(state.selectedStartDateMillis, state.selectedEndDateMillis)
-            }) {
-                Text("Apply Date Filter")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
 }

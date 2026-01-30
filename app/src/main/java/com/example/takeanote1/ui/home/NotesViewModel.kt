@@ -46,7 +46,7 @@ class NotesViewModel(
     val dateRangeFilter: StateFlow<Pair<Long?, Long?>> = _dateRangeFilter
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val notesPaged: Flow<PagingData<NoteEntity>> = combine(
+    private val filtersFlow = combine(
         userPreferences.userIdFlow,
         _searchQuery,
         _sortField,
@@ -62,7 +62,10 @@ class NotesViewModel(
             topic = array[4] as String?,
             dateRange = array[5] as Pair<Long?, Long?>
         )
-    }.flatMapLatest { filters ->
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val notesPaged: Flow<PagingData<NoteEntity>> = filtersFlow.flatMapLatest { filters ->
         if (filters.uid == null) {
             flowOf(PagingData.empty())
         } else {
@@ -73,6 +76,24 @@ class NotesViewModel(
                 sortOrder = filters.order,
                 topic = filters.topic,
                 isCompleted = false,
+                startDate = filters.dateRange.first,
+                endDate = filters.dateRange.second
+            )
+        }
+    }.cachedIn(viewModelScope)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val completedNotesPaged: Flow<PagingData<NoteEntity>> = filtersFlow.flatMapLatest { filters ->
+        if (filters.uid == null) {
+            flowOf(PagingData.empty())
+        } else {
+            repository.getNotesPaged(
+                uid = filters.uid,
+                searchQuery = filters.query,
+                sortField = filters.field,
+                sortOrder = filters.order,
+                topic = filters.topic,
+                isCompleted = true,
                 startDate = filters.dateRange.first,
                 endDate = filters.dateRange.second
             )
