@@ -89,8 +89,7 @@ fun LoginContent(
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.app_name),
-                showBack = false,
-                showMenu = false
+                showBack = false
             )
         }
     ) { paddingValues ->
