@@ -1,6 +1,10 @@
 package com.example.takeanote1.data.repository
 
 import android.util.Log
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.sqlite.db.SimpleSQLiteQuery
 import com.example.takeanote1.data.local.dao.NotesDao
 import com.example.takeanote1.data.local.dao.ReminderDao
 import com.example.takeanote1.data.local.dao.UserDao
@@ -45,6 +49,45 @@ class NotesRepository(
         return notesDao.getCompletedNotes(uid).onEach { notes ->
             Log.d(TAG, "getCompletedNotes: Found ${notes.size} completed notes")
         }
+    }
+
+    fun getNotesPaged(
+        uid: String,
+        searchQuery: String = "",
+        sortField: String = "createdAt",
+        sortOrder: String = "DESC",
+        topic: String? = null,
+        isCompleted: Boolean? = null,
+        startDate: Long? = null,
+        endDate: Long? = null
+    ): Flow<PagingData<NoteEntity>> {
+        val conditions = mutableListOf("userId = '$uid'")
+        if (searchQuery.isNotEmpty()) {
+            conditions.add("(title LIKE '%$searchQuery%' OR content LIKE '%$searchQuery%')")
+        }
+        if (topic != null && topic != "All") {
+            conditions.add("topic = '$topic'")
+        }
+        if (isCompleted != null) {
+            conditions.add("isCompleted = ${if (isCompleted) 1 else 0}")
+        }
+        if (startDate != null) {
+            conditions.add("createdAt >= $startDate")
+        }
+        if (endDate != null) {
+            conditions.add("createdAt <= $endDate")
+        }
+
+        val whereClause = if (conditions.isNotEmpty()) "WHERE ${conditions.joinToString(" AND ")}" else ""
+        val sql = "SELECT * FROM notes $whereClause ORDER BY $sortField $sortOrder"
+        
+        Log.d(TAG, "getNotesPaged: SQL: $sql")
+        val query = SimpleSQLiteQuery(sql)
+        
+        return Pager(
+            config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+            pagingSourceFactory = { notesDao.getNotesPaged(query) }
+        ).flow
     }
 
     suspend fun addNote(note: NoteEntity) {

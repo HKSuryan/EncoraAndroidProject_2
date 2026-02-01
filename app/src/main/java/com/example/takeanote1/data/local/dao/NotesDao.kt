@@ -1,9 +1,12 @@
 package com.example.takeanote1.data.local.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RawQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 import com.example.takeanote1.data.local.entity.NoteEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -46,4 +49,7 @@ interface NotesDao {
         topic: String,
         reminderTime: Long?
     )
+
+    @RawQuery(observedEntities = [NoteEntity::class])
+    fun getNotesPaged(query: SupportSQLiteQuery): PagingSource<Int, NoteEntity>
 }
