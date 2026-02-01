@@ -3,6 +3,7 @@ package com.example.takeanote1.ui.addnote
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -11,12 +12,6 @@ import com.example.takeanote1.ui.components.AppTopBar
 import com.example.takeanote1.ui.home.NotesViewModel
 import java.text.SimpleDateFormat
 import java.util.*
-fun isSameDay(millis1: Long, millis2: Long): Boolean {
-    val cal1 = Calendar.getInstance().apply { timeInMillis = millis1 }
-    val cal2 = Calendar.getInstance().apply { timeInMillis = millis2 }
-    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-            cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,124 +20,82 @@ fun AddNoteScreen(
     noteId: String? = null,
     onBack: () -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var content by remember { mutableStateOf("") }
-    var topic by remember { mutableStateOf("General") }
-    var reminderTime by remember { mutableStateOf<Long?>(null) }
-    val datePickerState = rememberDatePickerState(
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                val todayStart = Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
-                return utcTimeMillis >= todayStart
-            }
-        }
-    )
     val isEditing = noteId != null
-    val selectedDateMillis = datePickerState.selectedDateMillis
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
-    var dateError by remember { mutableStateOf<String?>(null) }
 
+    // ---- ViewModel-backed state (rotation safe) ----
+    val title by remember { derivedStateOf { viewModel.draftTitle } }
+    val content by remember { derivedStateOf { viewModel.draftContent } }
+    val topic by remember { derivedStateOf { viewModel.draftTopic } }
+    val reminderTime by remember { derivedStateOf { viewModel.draftReminderTime } }
+    val showDatePicker by remember { derivedStateOf { viewModel.draftShowDatePicker } }
+    val showTimePicker by remember { derivedStateOf { viewModel.draftShowTimePicker } }
+    val dateError by remember { derivedStateOf { viewModel.draftDateError } }
+    val timeError by remember { derivedStateOf { viewModel.draftTimeError } }
 
+    val topics = listOf("General", "Work", "Personal", "Shopping", "Health", "Ideas")
 
-    val now = Calendar.getInstance()
+    val verticalScrollState = rememberScrollState()
+    val horizontalScrollState = rememberScrollState()
+
+    // ---- Date Picker ----
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = reminderTime ?: System.currentTimeMillis()
+    )
+
+    // ---- Time Picker ----
     val timePickerState = rememberTimePickerState(
-        initialHour = reminderTime?.let {
-            Calendar.getInstance().apply { timeInMillis = it }.get(Calendar.HOUR_OF_DAY)
-        } ?: now.get(Calendar.HOUR_OF_DAY),
-        initialMinute = reminderTime?.let {
-            Calendar.getInstance().apply { timeInMillis = it }.get(Calendar.MINUTE)
-        } ?: now.get(Calendar.MINUTE),
+        initialHour = Calendar.getInstance().apply {
+            timeInMillis = reminderTime ?: System.currentTimeMillis()
+        }.get(Calendar.HOUR_OF_DAY),
+        initialMinute = Calendar.getInstance().apply {
+            timeInMillis = reminderTime ?: System.currentTimeMillis()
+        }.get(Calendar.MINUTE),
         is24Hour = false
     )
 
-
-    val topics = listOf("General", "Work", "Personal", "Shopping", "Health", "Ideas")
-    val scrollState = rememberScrollState()
-
-    val isTimeValid by remember(
-        selectedDateMillis,
-        timePickerState.hour,
-        timePickerState.minute
-    ) {
-        mutableStateOf(
-            selectedDateMillis?.let { dateMillis ->
-                val cal = Calendar.getInstance().apply {
-                    timeInMillis = dateMillis
-                    set(Calendar.HOUR_OF_DAY, timePickerState.hour)
-                    set(Calendar.MINUTE, timePickerState.minute)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-                cal.timeInMillis > System.currentTimeMillis()
-            } ?: false
-        )
-    }
-
-    // Load existing note if editing
+    // ---- Load note when editing ----
     LaunchedEffect(noteId) {
-        if (isEditing) {
-            viewModel.getNoteById(noteId!!)?.let { note ->
-                title = note.title
-                content = note.content
-                topic = note.topic
-                reminderTime = note.reminderTime
-            }
+        if (isEditing && viewModel.draftLoaded.not()) {
+            viewModel.loadNoteForEdit(noteId!!)
         }
     }
-
 
     // ---------- DATE PICKER ----------
     if (showDatePicker) {
         DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
+            onDismissRequest = { viewModel.draftShowDatePicker = false },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        val selectedDate =
-                            datePickerState.selectedDateMillis ?: return@TextButton
+                TextButton(onClick = {
+                    val selectedDate = datePickerState.selectedDateMillis ?: return@TextButton
 
-                        val todayStart = Calendar.getInstance().apply {
-                            set(Calendar.HOUR_OF_DAY, 0)
-                            set(Calendar.MINUTE, 0)
-                            set(Calendar.SECOND, 0)
-                            set(Calendar.MILLISECOND, 0)
-                        }.timeInMillis
+                    val todayStart = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }.timeInMillis
 
-                        if (selectedDate < todayStart) {
-                            dateError = "Please select a future date"
-                            return@TextButton
-                        }
-
-                        dateError = null
-                        showDatePicker = false
-                        showTimePicker = true
+                    if (selectedDate < todayStart) {
+                        viewModel.draftDateError = "Please select a future date"
+                        return@TextButton
                     }
-                ) {
-                    Text("Next")
-                }
+
+                    viewModel.draftDateError = null
+                    viewModel.draftShowDatePicker = false
+                    viewModel.draftShowTimePicker = true
+                }) { Text("Next") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = {
+                    viewModel.draftShowDatePicker = false
+                }) { Text("Cancel") }
             }
         ) {
             Column {
                 DatePicker(state = datePickerState)
-
                 dateError?.let {
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = it,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    Text(it, color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -151,55 +104,52 @@ fun AddNoteScreen(
     // ---------- TIME PICKER ----------
     if (showTimePicker) {
         AlertDialog(
-            onDismissRequest = { showTimePicker = false },
+            onDismissRequest = { viewModel.draftShowTimePicker = false },
             title = { Text("Select Time") },
             text = {
                 Column {
                     TimePicker(state = timePickerState)
-
-                    if (!isTimeValid) {
+                    timeError?.let {
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "Select a future time",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Text(it, color = MaterialTheme.colorScheme.error)
                     }
                 }
             },
             confirmButton = {
-                TextButton(
-                    enabled = isTimeValid,
-                    onClick = {
-                        val selectedCal = Calendar.getInstance().apply {
-                            timeInMillis = selectedDateMillis!!
-                            set(Calendar.HOUR_OF_DAY, timePickerState.hour)
-                            set(Calendar.MINUTE, timePickerState.minute)
-                            set(Calendar.SECOND, 0)
-                            set(Calendar.MILLISECOND, 0)
-                        }
+                TextButton(onClick = {
+                    val date = datePickerState.selectedDateMillis ?: return@TextButton
 
-                        reminderTime = selectedCal.timeInMillis
-                        showTimePicker = false
+                    val cal = Calendar.getInstance().apply {
+                        timeInMillis = date
+                        set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        set(Calendar.MINUTE, timePickerState.minute)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
                     }
-                ) {
-                    Text("Set Reminder")
-                }
+
+                    if (cal.timeInMillis <= System.currentTimeMillis()) {
+                        viewModel.draftTimeError = "Please select a future time"
+                        return@TextButton
+                    }
+
+                    viewModel.draftReminderTime = cal.timeInMillis
+                    viewModel.draftTimeError = null
+                    viewModel.draftShowTimePicker = false
+                }) { Text("Set Reminder") }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = {
+                    viewModel.draftShowTimePicker = false
+                }) { Text("Cancel") }
             }
         )
     }
 
-
-    // ---------- UI ----------
+    // ---------- MAIN UI ----------
     Scaffold(
         topBar = {
             AppTopBar(
-                title = if (isEditing) "Edit Note" else "Add New Note",
+                title = if (isEditing) "Edit Note" else "Add Note",
                 showBack = true,
                 onBackClick = onBack
             )
@@ -208,6 +158,7 @@ fun AddNoteScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(verticalScrollState)
                 .padding(padding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -215,7 +166,7 @@ fun AddNoteScreen(
 
             OutlinedTextField(
                 value = title,
-                onValueChange = { title = it },
+                onValueChange = { viewModel.draftTitle = it },
                 label = { Text("Title") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -225,13 +176,13 @@ fun AddNoteScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(scrollState),
+                    .horizontalScroll(horizontalScrollState),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 topics.forEach {
                     FilterChip(
                         selected = topic == it,
-                        onClick = { topic = it },
+                        onClick = { viewModel.draftTopic = it },
                         label = { Text(it) }
                     )
                 }
@@ -239,11 +190,11 @@ fun AddNoteScreen(
 
             OutlinedTextField(
                 value = content,
-                onValueChange = { content = it },
+                onValueChange = { viewModel.draftContent = it },
                 label = { Text("Content") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .heightIn(min = 160.dp),
                 minLines = 5
             )
 
@@ -257,19 +208,15 @@ fun AddNoteScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "Reminder set: $formatted",
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f)
-                    )
-                    TextButton(onClick = { reminderTime = null }) {
+                    Text("Reminder: $formatted", color = MaterialTheme.colorScheme.primary)
+                    TextButton(onClick = { viewModel.draftReminderTime = null }) {
                         Text("Clear")
                     }
                 }
             }
 
             Button(
-                onClick = { showDatePicker = true },
+                onClick = { viewModel.draftShowDatePicker = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (reminderTime == null) "Set Reminder" else "Update Reminder")
@@ -282,13 +229,10 @@ fun AddNoteScreen(
                     } else {
                         viewModel.addNote(title, content, topic, reminderTime)
                     }
+                    viewModel.clearDraft()
                     onBack()
                 },
-                enabled = title.isNotBlank() &&
-                        content.isNotBlank() &&
-                        topic.isNotBlank() &&
-                        reminderTime != null &&
-                        reminderTime!! > System.currentTimeMillis(),
+                enabled = title.isNotBlank() && content.isNotBlank(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (isEditing) "Update Note" else "Save Note")

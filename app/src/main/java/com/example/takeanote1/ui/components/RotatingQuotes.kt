@@ -3,8 +3,10 @@ package com.example.takeanote1.ui.components
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -79,22 +81,27 @@ fun RotatingQuotesWithIcons(
         ) {
             quotesWithIcons.forEachIndexed { index, _ ->
                 val isSelected = index == currentIndex
-                val dotColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
+                val dotColor =
+                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
 
                 Box(
                     modifier = Modifier
                         .size(12.dp)
                         .clip(CircleShape)
                         .background(dotColor)
-                        .clickable {
+                        .clickable(
+                            indication = LocalIndication.current,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
                             currentIndex = index
                         }
-                        .padding(4.dp)
                 )
+
                 if (index != quotesWithIcons.lastIndex) {
                     Spacer(modifier = Modifier.width(8.dp))
                 }
             }
         }
+
     }
 }

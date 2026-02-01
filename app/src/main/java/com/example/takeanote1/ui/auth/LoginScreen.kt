@@ -6,6 +6,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+
+import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,8 +29,8 @@ sealed class AuthUiState {
     object Idle : AuthUiState()
     object Loading : AuthUiState()
     object Success : AuthUiState()
-    object LoggedOut : AuthUiState()         // for logout
-    object SwitchAccountRequired : AuthUiState() // for switch account
+    object LoggedOut : AuthUiState()
+    object SwitchAccountRequired : AuthUiState()
     data class Error(val message: String) : AuthUiState()
 }
 
@@ -44,28 +47,21 @@ fun LoginScreen(
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        Log.d("LoginScreen", "Launcher: Activity result received. ResultCode: ${result.resultCode}")
         if (result.resultCode == Activity.RESULT_OK) {
-            Log.d("LoginScreen", "Launcher: Sign-in activity successful, handling result")
             googleSignInManager.handleSignInResult(
                 data = result.data,
                 onSuccess = { account ->
-                    Log.d("LoginScreen", "Launcher: Google handleSignInResult success for ${account.email}")
                     viewModel.signInWithGoogle(account)
                 },
                 onError = { message ->
-                    Log.e("LoginScreen", "Launcher: Google handleSignInResult error: $message")
+                    Log.e("LoginScreen", "Google sign-in error: $message")
                 }
             )
-        } else {
-            Log.w("LoginScreen", "Launcher: Sign-in activity cancelled or failed")
         }
     }
 
     LaunchedEffect(uiState) {
-        Log.d("LoginScreen", "LaunchedEffect: uiState changed to $uiState")
         if (uiState is AuthUiState.Success) {
-            Log.d("LoginScreen", "LaunchedEffect: Success state detected, navigating to home")
             onLoginSuccess()
         }
     }
@@ -73,7 +69,6 @@ fun LoginScreen(
     LoginContent(
         uiState = uiState,
         onGoogleLoginClick = {
-            Log.d("LoginScreen", "onGoogleLoginClick: Launching Google Sign-In intent")
             launcher.launch(googleSignInManager.signIn())
         }
     )
@@ -98,15 +93,16 @@ fun LoginContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
 
-                // ------------------- ROTATING QUOTES -------------------
+            // ---------- CENTER / ENLARGED QUOTES ----------
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center)
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 RotatingQuotesWithIcons(
                     quotesWithIcons = listOf(
                         stringResource(R.string.welcome) to R.drawable.ic_android,
@@ -115,16 +111,27 @@ fun LoginContent(
                         stringResource(R.string.organize_thoughts) to R.drawable.ic_note,
                         stringResource(R.string.start_journey) to R.drawable.ic_rocket
                     ),
-                    rotationTime = 2000L
+                    rotationTime = 2000L,
+
                 )
+            }
 
-                Spacer(modifier = Modifier.height(32.dp))
+            // ---------- BOTTOM LOGIN BUTTON ----------
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
 
-                // ------------------- GOOGLE SIGN-IN BUTTON -------------------
                 Button(
                     onClick = onGoogleLoginClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = uiState !is AuthUiState.Loading
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    enabled = uiState !is AuthUiState.Loading,
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     if (uiState is AuthUiState.Loading) {
                         CircularProgressIndicator(
@@ -134,23 +141,27 @@ fun LoginContent(
                         )
                     } else {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Image(
                                 painter = painterResource(R.drawable.ic_google_logo),
                                 contentDescription = "Google",
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(20.dp)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = stringResource(R.string.sign_in_google))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.sign_in_google),
+                                style = MaterialTheme.typography.labelLarge
+                            )
                         }
                     }
                 }
 
-                // ------------------- ERROR MESSAGE -------------------
                 if (uiState is AuthUiState.Error) {
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = (uiState as AuthUiState.Error).message,
+                        text = uiState.message,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -160,11 +171,16 @@ fun LoginContent(
     }
 }
 
+
+
 // ------------------- PREVIEW -------------------
-@Composable
 @Preview(showBackground = true, showSystemUi = true)
+@Composable
 fun LoginScreenPreview() {
     TakeANoteTheme {
-        LoginContent(uiState = AuthUiState.Idle, onGoogleLoginClick = {})
+        LoginContent(
+            uiState = AuthUiState.Idle,
+            onGoogleLoginClick = {}
+        )
     }
 }
