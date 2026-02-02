@@ -13,36 +13,50 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun SortDialog(onDismiss: () -> Unit, onSortSelected: (String, String) -> Unit) {
+fun SortDialog(
+    onDismiss: () -> Unit,
+    onSortSelected: (String, String) -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Sort By") },
         text = {
-            Column {
-                ListItem(
-                    headlineContent = { Text("Date (Newest First)") },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    trailingContent = { TextButton(onClick = { onSortSelected("createdAt", "DESC") }) { Text("Select") } }
-                )
-                ListItem(
-                    headlineContent = { Text("Date (Oldest First)") },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    trailingContent = { TextButton(onClick = { onSortSelected("createdAt", "ASC") }) { Text("Select") } }
-                )
-                ListItem(
-                    headlineContent = { Text("Title (A-Z)") },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    trailingContent = { TextButton(onClick = { onSortSelected("title", "ASC") }) { Text("Select") } }
-                )
-                ListItem(
-                    headlineContent = { Text("Title (Z-A)") },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    trailingContent = { TextButton(onClick = { onSortSelected("title", "DESC") }) { Text("Select") } }
-                )
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                SortItem("Date (Newest First)") {
+                    onSortSelected("createdAt", "DESC")
+                }
+                SortItem("Date (Oldest First)") {
+                    onSortSelected("createdAt", "ASC")
+                }
+                SortItem("Title (A–Z)") {
+                    onSortSelected("title", "ASC")
+                }
+                SortItem("Title (Z–A)") {
+                    onSortSelected("title", "DESC")
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+@Composable
+private fun SortItem(
+    title: String,
+    onSelect: () -> Unit
+) {
+    ListItem(
+        headlineContent = { Text(title) },
+        trailingContent = {
+            TextButton(onClick = onSelect) {
+                Text("Select")
+            }
         }
     )
 }

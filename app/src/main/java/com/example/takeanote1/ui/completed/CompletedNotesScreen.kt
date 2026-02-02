@@ -38,7 +38,7 @@ fun CompletedNotesScreen(
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
-    
+
     val pagedNotes = viewModel.completedNotesPaged.collectAsLazyPagingItems()
     val viewType by viewModel.viewType.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()

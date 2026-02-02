@@ -61,6 +61,7 @@ class NotesViewModel(
     val topicFilter: StateFlow<String?> = _topicFilter
 
     private val _dateRangeFilter = MutableStateFlow<Pair<Long?, Long?>>(null to null)
+
     val dateRangeFilter: StateFlow<Pair<Long?, Long?>> = _dateRangeFilter
 
     fun loadNoteForEdit(noteId: String) {
