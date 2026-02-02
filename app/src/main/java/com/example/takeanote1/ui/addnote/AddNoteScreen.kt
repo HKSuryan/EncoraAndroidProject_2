@@ -6,12 +6,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import com.example.takeanote1.ui.components.AppTopBar
 import com.example.takeanote1.ui.home.NotesViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+
+/** Tracks which field had focus (rotation-safe) */
+enum class FocusTarget {
+    TITLE, CONTENT
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,10 +41,18 @@ fun AddNoteScreen(
     val dateError by remember { derivedStateOf { viewModel.draftDateError } }
     val timeError by remember { derivedStateOf { viewModel.draftTimeError } }
 
-    val topics = listOf("General", "Work", "Personal", "Shopping", "Health", "Ideas")
+    // ---- Focus handling (rotation safe) ----
+    val titleFocusRequester = remember { FocusRequester() }
+    val contentFocusRequester = remember { FocusRequester() }
 
+    var lastFocus by rememberSaveable { mutableStateOf<FocusTarget?>(null) }
+    var focusRestored by rememberSaveable { mutableStateOf(false) }
+
+    // ---- Scroll ----
     val verticalScrollState = rememberScrollState()
     val horizontalScrollState = rememberScrollState()
+
+    val topics = listOf("General", "Work", "Personal", "Shopping", "Health", "Ideas")
 
     // ---- Date Picker ----
     val datePickerState = rememberDatePickerState(
@@ -43,20 +60,38 @@ fun AddNoteScreen(
     )
 
     // ---- Time Picker ----
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = reminderTime ?: System.currentTimeMillis()
+    }
+
     val timePickerState = rememberTimePickerState(
-        initialHour = Calendar.getInstance().apply {
-            timeInMillis = reminderTime ?: System.currentTimeMillis()
-        }.get(Calendar.HOUR_OF_DAY),
-        initialMinute = Calendar.getInstance().apply {
-            timeInMillis = reminderTime ?: System.currentTimeMillis()
-        }.get(Calendar.MINUTE),
+        initialHour = calendar.get(Calendar.HOUR_OF_DAY),
+        initialMinute = calendar.get(Calendar.MINUTE),
         is24Hour = false
     )
 
     // ---- Load note when editing ----
     LaunchedEffect(noteId) {
-        if (isEditing && viewModel.draftLoaded.not()) {
+        if (isEditing && !viewModel.draftLoaded) {
             viewModel.loadNoteForEdit(noteId!!)
+        }
+    }
+
+    // ---- Restore EXACT focus after rotation ----
+    LaunchedEffect(lastFocus, isEditing) {
+        if (!focusRestored) {
+            when (lastFocus) {
+                FocusTarget.TITLE -> titleFocusRequester.requestFocus()
+                FocusTarget.CONTENT -> contentFocusRequester.requestFocus()
+                null -> {
+                    if (isEditing) {
+                        contentFocusRequester.requestFocus()
+                    } else {
+                        titleFocusRequester.requestFocus()
+                    }
+                }
+            }
+            focusRestored = true
         }
     }
 
@@ -86,9 +121,9 @@ fun AddNoteScreen(
                 }) { Text("Next") }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    viewModel.draftShowDatePicker = false
-                }) { Text("Cancel") }
+                TextButton(onClick = { viewModel.draftShowDatePicker = false }) {
+                    Text("Cancel")
+                }
             }
         ) {
             Column {
@@ -138,9 +173,9 @@ fun AddNoteScreen(
                 }) { Text("Set Reminder") }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    viewModel.draftShowTimePicker = false
-                }) { Text("Cancel") }
+                TextButton(onClick = { viewModel.draftShowTimePicker = false }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -168,7 +203,12 @@ fun AddNoteScreen(
                 value = title,
                 onValueChange = { viewModel.draftTitle = it },
                 label = { Text("Title") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(titleFocusRequester)
+                    .onFocusChanged {
+                        if (it.isFocused) lastFocus = FocusTarget.TITLE
+                    }
             )
 
             Text("Select Topic", style = MaterialTheme.typography.labelLarge)
@@ -194,7 +234,11 @@ fun AddNoteScreen(
                 label = { Text("Content") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 160.dp),
+                    .heightIn(min = 160.dp)
+                    .focusRequester(contentFocusRequester)
+                    .onFocusChanged {
+                        if (it.isFocused) lastFocus = FocusTarget.CONTENT
+                    },
                 minLines = 5
             )
 
