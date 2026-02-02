@@ -1,6 +1,8 @@
 package com.example.takeanote1.ui.home
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -11,21 +13,23 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.example.takeanote1.ui.auth.AuthUiState
-import com.example.takeanote1.ui.components.NoteCard
-import com.example.takeanote1.ui.components.AppTopBar
-import com.example.takeanote1.ui.components.SortDialog
-import com.example.takeanote1.ui.components.FilterDialog
 import com.example.takeanote1.ui.auth.AuthViewModel
+import com.example.takeanote1.ui.components.*
+import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: NotesViewModel,
@@ -38,32 +42,61 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
+
     val authState by authViewModel.uiState.collectAsState()
-    
+
     val pagedNotes = viewModel.notesPaged.collectAsLazyPagingItems()
     val viewType by viewModel.viewType.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
-    
-    var showSearchField by remember { mutableStateOf(false) }
-    var showSortDialog by remember { mutableStateOf(false) }
-    var showFilterDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(authState) {
-        when (authState) {
-            AuthUiState.LoggedOut -> onLoginNavigate()
-            AuthUiState.SwitchAccountRequired -> onLoginNavigate()
-            else -> {}
+    /* ---------- SEARCH STATE (SURVIVES ROTATION) ---------- */
+
+    var showSearchField by rememberSaveable { mutableStateOf(false) }
+
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    /* ---------- AUTO FOCUS + KEYBOARD RESTORE ---------- */
+
+    LaunchedEffect(showSearchField) {
+        if (showSearchField) {
+            delay(120)
+            focusRequester.requestFocus()
+            keyboardController?.show()
         }
     }
 
+    /* ---------- BACK PRESS COLLAPSE SEARCH ---------- */
+
+    BackHandler(enabled = showSearchField) {
+        showSearchField = false
+        keyboardController?.hide()
+    }
+
+    /* ---------- AUTH HANDLING ---------- */
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            AuthUiState.LoggedOut,
+            AuthUiState.SwitchAccountRequired -> onLoginNavigate()
+            else -> Unit
+        }
+    }
+
+    /* ---------- DIALOG STATES ---------- */
+
+    var showSortDialog by remember { mutableStateOf(false) }
+    var showFilterDialog by remember { mutableStateOf(false) }
+
+    /* ---------- UI ---------- */
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             Column {
                 AppTopBar(
                     title = "My Notes",
-                    onSearchClick = { showSearchField = !showSearchField },
+                    onSearchClick = { showSearchField = true },
                     onSortClick = { showSortDialog = true },
                     onFilterClick = { showFilterDialog = true },
                     onViewTypeClick = { viewModel.toggleViewType() },
@@ -73,17 +106,24 @@ fun HomeScreen(
                     onHistoryClick = onHistoryClick,
                     onRemindersClick = onRemindersClick
                 )
-                if (showSearchField) {
-                    TextField(
+
+                AnimatedVisibility(visible = showSearchField) {
+                    OutlinedTextField(
                         value = searchQuery,
-                        onValueChange = { viewModel.setSearchQuery(it) },
-                        modifier = Modifier.fillMaxWidth(),
+                        onValueChange = viewModel::setSearchQuery,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                            .focusRequester(focusRequester),
                         placeholder = { Text("Search notes...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = null)
+                        },
                         trailingIcon = {
-                            IconButton(onClick = { 
+                            IconButton(onClick = {
                                 viewModel.setSearchQuery("")
-                                showSearchField = false 
+                                showSearchField = false
+                                keyboardController?.hide()
                             }) {
                                 Icon(Icons.Default.Close, contentDescription = null)
                             }
@@ -99,6 +139,7 @@ fun HomeScreen(
             }
         }
     ) { padding ->
+
         if (viewType == ViewType.LIST) {
             LazyColumn(
                 modifier = Modifier
@@ -111,13 +152,12 @@ fun HomeScreen(
                     key = pagedNotes.itemKey { it.id },
                     contentType = pagedNotes.itemContentType { "note" }
                 ) { index ->
-                    val note = pagedNotes[index]
-                    note?.let {
+                    pagedNotes[index]?.let { note ->
                         NoteCard(
-                            note = it,
-                            onCompleteClick = { viewModel.markAsCompleted(it.id) },
-                            onEditClick = { onEditNoteClick(it.id) },
-                            onDeleteClick = { viewModel.deleteNote(it.id) }
+                            note = note,
+                            onCompleteClick = { viewModel.markAsCompleted(note.id) },
+                            onEditClick = { onEditNoteClick(note.id) },
+                            onDeleteClick = { viewModel.deleteNote(note.id) }
                         )
                     }
                 }
@@ -135,13 +175,12 @@ fun HomeScreen(
                     key = pagedNotes.itemKey { it.id },
                     contentType = pagedNotes.itemContentType { "note" }
                 ) { index ->
-                    val note = pagedNotes[index]
-                    note?.let {
+                    pagedNotes[index]?.let { note ->
                         NoteCard(
-                            note = it,
-                            onCompleteClick = { viewModel.markAsCompleted(it.id) },
-                            onEditClick = { onEditNoteClick(it.id) },
-                            onDeleteClick = { viewModel.deleteNote(it.id) }
+                            note = note,
+                            onCompleteClick = { viewModel.markAsCompleted(note.id) },
+                            onEditClick = { onEditNoteClick(note.id) },
+                            onDeleteClick = { viewModel.deleteNote(note.id) }
                         )
                     }
                 }
@@ -171,8 +210,8 @@ fun HomeScreen(
     if (showFilterDialog) {
         FilterDialog(
             onDismiss = { showFilterDialog = false },
-            onTopicSelected = { topic ->
-                viewModel.setTopicFilter(topic)
+            onTopicSelected = {
+                viewModel.setTopicFilter(it)
                 showFilterDialog = false
             },
             onDateRangeSelected = { start, end ->

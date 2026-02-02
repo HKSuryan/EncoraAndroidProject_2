@@ -2,16 +2,20 @@ package com.example.takeanote1.ui.reminder
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -70,41 +74,23 @@ fun RemindersListScreen(
                     )
                 }
                 else -> {
-                    RemindersList(
-                        reminders = uiState.reminders,
-                        onReminderClick = { /* Handle click */ },
-                        onCompleteClick = { reminder ->
-                            viewModel.markReminderComplete(reminder.id)
-                        },
-                        onDeleteClick = { reminder ->
-                            viewModel.deleteReminder(reminder.id, context)
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(uiState.reminders, key = { it.id }) { reminder ->
+                            ReminderItem(
+                                reminder = reminder,
+                                onClick = { /* Handle click */ },
+                                onCompleteClick = { viewModel.markReminderComplete(reminder.id) },
+                                onDeleteClick = { viewModel.deleteReminder(reminder.id, context) }
+                            )
                         }
-                    )
+                    }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun RemindersList(
-    reminders: List<Reminder>,
-    onReminderClick: (Reminder) -> Unit,
-    onCompleteClick: (Reminder) -> Unit,
-    onDeleteClick: (Reminder) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(reminders, key = { it.id }) { reminder ->
-            ReminderItem(
-                reminder = reminder,
-                onClick = { onReminderClick(reminder) },
-                onCompleteClick = { onCompleteClick(reminder) },
-                onDeleteClick = { onDeleteClick(reminder) }
-            )
         }
     }
 }
@@ -123,7 +109,10 @@ fun ReminderItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null // No ripple on the Card itself
+            ) { onClick() },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
@@ -207,7 +196,12 @@ fun ReminderItem(
             }
 
             // Delete button
-            IconButton(onClick = { showDeleteDialog = true }) {
+            IconButton(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier.then(
+                    Modifier.background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
+                )
+            ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Delete",
@@ -246,7 +240,8 @@ fun EmptyRemindersView(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier
+            .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -270,3 +265,5 @@ fun EmptyRemindersView(
         )
     }
 }
+
+

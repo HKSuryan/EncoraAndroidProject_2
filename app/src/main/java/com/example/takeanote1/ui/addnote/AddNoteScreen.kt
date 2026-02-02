@@ -187,6 +187,7 @@ fun AddNoteScreen(
                 title = if (isEditing) "Edit Note" else "Add Note",
                 showBack = true,
                 onBackClick = onBack
+
             )
         }
     ) { padding ->

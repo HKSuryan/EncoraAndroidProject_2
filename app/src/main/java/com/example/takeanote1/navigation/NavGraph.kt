@@ -119,33 +119,33 @@ fun AppNavGraph() {
                 onEditNoteClick = { noteId -> navController.navigate("add_note/$noteId") }
             )
         }
-        composable("reminders") {
-            RemindersListScreen(
-                viewModel = reminderViewModel,
-                onAddReminderClick = { navController.navigate("add_reminder") },
-                onBack = { notesViewModel.clearDraft() ;navController.popBackStack() }
-            )
-        }
+//        composable("reminders") {
+//            RemindersListScreen(
+//                viewModel = reminderViewModel,
+//                onAddReminderClick = { navController.navigate("add_reminder") },
+//                onBack = { notesViewModel.clearDraft() ;navController.popBackStack() }
+//            )
+//        }
 
-        composable("add_reminder") {
-            AddReminderScreen(
-                viewModel = reminderViewModel,
-                onBack = {notesViewModel.clearDraft() ; navController.popBackStack() }
-            )
-        }
+//        composable("add_reminder") {
+//            AddReminderScreen(
+//                viewModel = reminderViewModel,
+//                onBack = {notesViewModel.clearDraft() ; navController.popBackStack() }
+//            )
+//        }
 
         // Add reminder with note ID (optional route for creating reminder from a note)
-        composable(
-            route = "add_reminder/{noteId}",
-            arguments = listOf(navArgument("noteId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val noteId = backStackEntry.arguments?.getInt("noteId")
-            AddReminderScreen(
-                viewModel = reminderViewModel,
-                noteId = noteId,
-                onBack = {notesViewModel.clearDraft() ; navController.popBackStack() }
-            )
-        }
+//        composable(
+//            route = "add_reminder/{noteId}",
+//            arguments = listOf(navArgument("noteId") { type = NavType.IntType })
+//        ) { backStackEntry ->
+//            val noteId = backStackEntry.arguments?.getInt("noteId")
+//            AddReminderScreen(
+//                viewModel = reminderViewModel,
+//                noteId = noteId,
+//                onBack = {notesViewModel.clearDraft() ; navController.popBackStack() }
+//            )
+//        }
 
     }
 }
