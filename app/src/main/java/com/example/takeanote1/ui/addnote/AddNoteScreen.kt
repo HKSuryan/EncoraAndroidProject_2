@@ -11,6 +11,12 @@ import com.example.takeanote1.ui.components.AppTopBar
 import com.example.takeanote1.ui.home.NotesViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+fun isSameDay(millis1: Long, millis2: Long): Boolean {
+    val cal1 = Calendar.getInstance().apply { timeInMillis = millis1 }
+    val cal2 = Calendar.getInstance().apply { timeInMillis = millis2 }
+    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+            cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,8 +29,60 @@ fun AddNoteScreen(
     var content by remember { mutableStateOf("") }
     var topic by remember { mutableStateOf("General") }
     var reminderTime by remember { mutableStateOf<Long?>(null) }
-
+    val datePickerState = rememberDatePickerState(
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val todayStart = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                return utcTimeMillis >= todayStart
+            }
+        }
+    )
     val isEditing = noteId != null
+    val selectedDateMillis = datePickerState.selectedDateMillis
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var dateError by remember { mutableStateOf<String?>(null) }
+
+
+
+    val now = Calendar.getInstance()
+    val timePickerState = rememberTimePickerState(
+        initialHour = reminderTime?.let {
+            Calendar.getInstance().apply { timeInMillis = it }.get(Calendar.HOUR_OF_DAY)
+        } ?: now.get(Calendar.HOUR_OF_DAY),
+        initialMinute = reminderTime?.let {
+            Calendar.getInstance().apply { timeInMillis = it }.get(Calendar.MINUTE)
+        } ?: now.get(Calendar.MINUTE),
+        is24Hour = false
+    )
+
+
+    val topics = listOf("General", "Work", "Personal", "Shopping", "Health", "Ideas")
+    val scrollState = rememberScrollState()
+
+    val isTimeValid by remember(
+        selectedDateMillis,
+        timePickerState.hour,
+        timePickerState.minute
+    ) {
+        mutableStateOf(
+            selectedDateMillis?.let { dateMillis ->
+                val cal = Calendar.getInstance().apply {
+                    timeInMillis = dateMillis
+                    set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                    set(Calendar.MINUTE, timePickerState.minute)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                cal.timeInMillis > System.currentTimeMillis()
+            } ?: false
+        )
+    }
 
     // Load existing note if editing
     LaunchedEffect(noteId) {
@@ -38,27 +96,6 @@ fun AddNoteScreen(
         }
     }
 
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
-    var dateError by remember { mutableStateOf<String?>(null) }
-    var timeError by remember { mutableStateOf<String?>(null) }
-
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = reminderTime ?: System.currentTimeMillis()
-    )
-
-    val timePickerState = rememberTimePickerState(
-        initialHour = if (reminderTime != null) {
-            Calendar.getInstance().apply { timeInMillis = reminderTime!! }.get(Calendar.HOUR_OF_DAY)
-        } else 0,
-        initialMinute = if (reminderTime != null) {
-            Calendar.getInstance().apply { timeInMillis = reminderTime!! }.get(Calendar.MINUTE)
-        } else 0,
-        is24Hour = false
-    )
-
-    val topics = listOf("General", "Work", "Personal", "Shopping", "Health", "Ideas")
-    val scrollState = rememberScrollState()
 
     // ---------- DATE PICKER ----------
     if (showDatePicker) {
@@ -120,10 +157,10 @@ fun AddNoteScreen(
                 Column {
                     TimePicker(state = timePickerState)
 
-                    timeError?.let {
+                    if (!isTimeValid) {
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = it,
+                            text = "Select a future time",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -132,25 +169,17 @@ fun AddNoteScreen(
             },
             confirmButton = {
                 TextButton(
+                    enabled = isTimeValid,
                     onClick = {
-                        val selectedDate =
-                            datePickerState.selectedDateMillis ?: return@TextButton
-
                         val selectedCal = Calendar.getInstance().apply {
-                            timeInMillis = selectedDate
+                            timeInMillis = selectedDateMillis!!
                             set(Calendar.HOUR_OF_DAY, timePickerState.hour)
                             set(Calendar.MINUTE, timePickerState.minute)
                             set(Calendar.SECOND, 0)
                             set(Calendar.MILLISECOND, 0)
                         }
 
-                        if (selectedCal.timeInMillis <= System.currentTimeMillis()) {
-                            timeError = "Please select a future time"
-                            return@TextButton
-                        }
-
                         reminderTime = selectedCal.timeInMillis
-                        timeError = null
                         showTimePicker = false
                     }
                 ) {
@@ -164,6 +193,7 @@ fun AddNoteScreen(
             }
         )
     }
+
 
     // ---------- UI ----------
     Scaffold(
@@ -254,7 +284,11 @@ fun AddNoteScreen(
                     }
                     onBack()
                 },
-                enabled = title.isNotBlank() && content.isNotBlank(),
+                enabled = title.isNotBlank() &&
+                        content.isNotBlank() &&
+                        topic.isNotBlank() &&
+                        reminderTime != null &&
+                        reminderTime!! > System.currentTimeMillis(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (isEditing) "Update Note" else "Save Note")
