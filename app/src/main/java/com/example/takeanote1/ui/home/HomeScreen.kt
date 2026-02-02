@@ -20,6 +20,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
@@ -47,17 +48,20 @@ fun HomeScreen(
 
     val pagedNotes = viewModel.notesPaged.collectAsLazyPagingItems()
     val viewType by viewModel.viewType.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
+    val filters by viewModel.filters.collectAsState() // Updated
 
     /* ---------- SEARCH STATE (SURVIVES ROTATION) ---------- */
 
     var showSearchField by rememberSaveable { mutableStateOf(false) }
+    var showSortDialog by rememberSaveable { mutableStateOf(false) }
+    var showFilterDialog by rememberSaveable { mutableStateOf(false) }
 
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    /* ---------- AUTO FOCUS + KEYBOARD RESTORE ---------- */
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
+    /* ---------- AUTO FOCUS + KEYBOARD RESTORE ---------- */
     LaunchedEffect(showSearchField) {
         if (showSearchField) {
             delay(120)
@@ -67,14 +71,12 @@ fun HomeScreen(
     }
 
     /* ---------- BACK PRESS COLLAPSE SEARCH ---------- */
-
     BackHandler(enabled = showSearchField) {
         showSearchField = false
         keyboardController?.hide()
     }
 
     /* ---------- AUTH HANDLING ---------- */
-
     LaunchedEffect(authState) {
         when (authState) {
             AuthUiState.LoggedOut,
@@ -83,13 +85,7 @@ fun HomeScreen(
         }
     }
 
-    /* ---------- DIALOG STATES ---------- */
-
-    var showSortDialog by remember { mutableStateOf(false) }
-    var showFilterDialog by remember { mutableStateOf(false) }
-
     /* ---------- UI ---------- */
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -107,10 +103,11 @@ fun HomeScreen(
                     onRemindersClick = onRemindersClick
                 )
 
+
                 AnimatedVisibility(visible = showSearchField) {
                     OutlinedTextField(
                         value = searchQuery,
-                        onValueChange = viewModel::setSearchQuery,
+                        onValueChange = { viewModel.setSearchQuery(it) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp)
@@ -121,7 +118,7 @@ fun HomeScreen(
                         },
                         trailingIcon = {
                             IconButton(onClick = {
-                                viewModel.setSearchQuery("")
+                                viewModel.setSearchQuery(TextFieldValue("")) // clear with cursor reset
                                 showSearchField = false
                                 keyboardController?.hide()
                             }) {
@@ -197,6 +194,7 @@ fun HomeScreen(
         }
     }
 
+    /* ---------- SORT DIALOG ---------- */
     if (showSortDialog) {
         SortDialog(
             onDismiss = { showSortDialog = false },
@@ -207,6 +205,7 @@ fun HomeScreen(
         )
     }
 
+    /* ---------- FILTER DIALOG ---------- */
     if (showFilterDialog) {
         FilterDialog(
             onDismiss = { showFilterDialog = false },
@@ -218,8 +217,8 @@ fun HomeScreen(
                 viewModel.setDateRangeFilter(start, end)
                 showFilterDialog = false
             },
-            currentTopic = viewModel.topicFilter.collectAsState().value,
-            currentDateRange = viewModel.dateRangeFilter.collectAsState().value,
+            currentTopic = filters.topic,               // Updated
+            currentDateRange = filters.dateRange,       // Updated
             onClearFilters = {
                 viewModel.clearFilters()
                 showFilterDialog = false
