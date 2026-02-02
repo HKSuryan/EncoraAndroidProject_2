@@ -1,6 +1,8 @@
 package com.example.takeanote1.ui.auth
 
+
 import android.app.Activity
+import android.content.res.Configuration
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -88,6 +91,9 @@ fun LoginContent(
     uiState: AuthUiState,
     onGoogleLoginClick: () -> Unit
 ) {
+    val configuration = LocalConfiguration.current
+    val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+
     Scaffold(
         topBar = {
             AppTopBar(
@@ -97,60 +103,140 @@ fun LoginContent(
         }
     ) { paddingValues ->
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-
-            RotatingQuotesWithIcons(
-                quotesWithIcons = listOf(
-                    stringResource(R.string.welcome) to R.drawable.ic_android,
-                    stringResource(R.string.keep_notes_safe) to R.drawable.ic_security,
-                    stringResource(R.string.get_reminders) to R.drawable.ic_alert,
-                    stringResource(R.string.organize_thoughts) to R.drawable.ic_note,
-                    stringResource(R.string.start_journey) to R.drawable.ic_rocket
-                ),
-                rotationTime = 2000L
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = onGoogleLoginClick,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = uiState !is AuthUiState.Loading
+        if (isPortrait) {
+            //KEEP WEIGHTED LAYOUT
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp)
             ) {
-                if (uiState is AuthUiState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Box(
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    RotatingQuotesWithIcons(
+                        quotesWithIcons = listOf(
+                            stringResource(R.string.welcome) to R.drawable.ic_android,
+                            stringResource(R.string.keep_notes_safe) to R.drawable.ic_security,
+                            stringResource(R.string.get_reminders) to R.drawable.ic_alert,
+                            stringResource(R.string.organize_thoughts) to R.drawable.ic_note,
+                            stringResource(R.string.start_journey) to R.drawable.ic_rocket
+                        ),
+                        rotationTime = 2200L
                     )
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_google_logo),
-                            contentDescription = "Google",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = stringResource(R.string.sign_in_google))
+                }
+
+                Column(
+                    modifier = Modifier
+                        .weight(0.8f)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.Bottom,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    Button(
+                        onClick = onGoogleLoginClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        enabled = uiState !is AuthUiState.Loading
+                    ) {
+                        if (uiState is AuthUiState.Loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(R.drawable.ic_google_logo),
+                                    contentDescription = "Google",
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = stringResource(R.string.sign_in_google),
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                            }
+                        }
                     }
+
+                    if (uiState is AuthUiState.Error) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = uiState.message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
+        } else {
+            // ✅ LANDSCAPE — SCROLL SAFE
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
 
-            if (uiState is AuthUiState.Error) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = uiState.message,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                Spacer(modifier = Modifier.height(16.dp))
+
+                RotatingQuotesWithIcons(
+                    quotesWithIcons = listOf(
+                        stringResource(R.string.welcome) to R.drawable.ic_android,
+                        stringResource(R.string.keep_notes_safe) to R.drawable.ic_security,
+                        stringResource(R.string.get_reminders) to R.drawable.ic_alert,
+                        stringResource(R.string.organize_thoughts) to R.drawable.ic_note,
+                        stringResource(R.string.start_journey) to R.drawable.ic_rocket
+                    ),
+                    rotationTime = 2200L
                 )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = onGoogleLoginClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    enabled = uiState !is AuthUiState.Loading
+                ) {
+                    if (uiState is AuthUiState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_google_logo),
+                                contentDescription = "Google",
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.sign_in_google),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

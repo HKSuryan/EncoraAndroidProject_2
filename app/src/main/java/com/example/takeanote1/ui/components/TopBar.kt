@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,17 +33,20 @@ fun AppTopBar(
     onRemindersClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
-    var showMenu by remember { mutableStateOf(false) }
 
-    CenterAlignedTopAppBar(
+    var showMenu by rememberSaveable { mutableStateOf(false) }
+
+    TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.primary,
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            navigationIconContentColor = MaterialTheme.colorScheme.onSurface
         ),
         title = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -50,114 +54,107 @@ fun AppTopBar(
         navigationIcon = {
             if (showBack) {
                 IconButton(onClick = { onBackClick?.invoke() }) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back"
-                    )
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
             }
         },
         actions = {
+
             actions()
 
+            if (onSearchClick != null) {
+                IconButton(onClick = onSearchClick) {
+                    Icon(Icons.Default.Search, contentDescription = "Search")
+                }
+            }
+
             if (onViewTypeClick != null) {
-                IconButton(onClick = { onViewTypeClick.invoke() }) {
+                IconButton(onClick = onViewTypeClick) {
                     Icon(
                         imageVector = if (isGridView) Icons.Default.List else Icons.Default.GridView,
-                        contentDescription = "Toggle View Type"
+                        contentDescription = "Toggle View"
                     )
                 }
             }
 
-            val hasMenuActions = onSearchClick != null || onSortClick != null ||
-                    onFilterClick != null || onHistoryClick != null ||
-                    onRemindersClick != null || onSwitchAccountClick != null || 
+            val hasOverflow = onSortClick != null ||
+                    onFilterClick != null ||
+                    onRemindersClick != null ||
+                    onHistoryClick != null ||
+                    onSwitchAccountClick != null ||
                     onLogoutClick != null
 
-            if (hasMenuActions) {
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+            if (hasOverflow) {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "More")
+                }
+
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+
+                    onSortClick?.let {
+                        DropdownMenuItem(
+                            text = { Text("Sort") },
+                            onClick = {
+                                showMenu = false
+                                it()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Sort, contentDescription = null)
+                            }
+                        )
                     }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
+
+                    onFilterClick?.let {
+                        DropdownMenuItem(
+                            text = { Text("Filter") },
+                            onClick = {
+                                showMenu = false
+                                it()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.FilterList, contentDescription = null)
+                            }
+                        )
+                    }
+
+                    if (
+                        (onSortClick != null || onFilterClick != null || onRemindersClick != null) &&
+                        (onHistoryClick != null || onSwitchAccountClick != null || onLogoutClick != null)
                     ) {
-                        if (onSearchClick != null) {
-                            DropdownMenuItem(
-                                text = { Text("Search") },
-                                onClick = {
-                                    showMenu = false
-                                    onSearchClick.invoke()
-                                },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
-                            )
-                        }
-                        if (onSortClick != null) {
-                            DropdownMenuItem(
-                                text = { Text("Sort") },
-                                onClick = {
-                                    showMenu = false
-                                    onSortClick.invoke()
-                                },
-                                leadingIcon = { Icon(Icons.Default.Sort, contentDescription = null) }
-                            )
-                        }
-                        if (onFilterClick != null) {
-                            DropdownMenuItem(
-                                text = { Text("Filter") },
-                                onClick = {
-                                    showMenu = false
-                                    onFilterClick.invoke()
-                                },
-                                leadingIcon = { Icon(Icons.Default.FilterList, contentDescription = null) }
-                            )
-                        }
+                        HorizontalDivider()
+                    }
 
-                        if (onRemindersClick != null) {
-                            DropdownMenuItem(
-                                text = { Text("Reminders") },
-                                onClick = {
-                                    showMenu = false
-                                    onRemindersClick.invoke()
-                                },
-                                leadingIcon = { Icon(Icons.Default.Notifications, contentDescription = null) }
-                            )
-                        }
+                    onHistoryClick?.let {
+                        DropdownMenuItem(
+                            text = { Text("Past Notes") },
+                            onClick = {
+                                showMenu = false
+                                it()
+                            }
+                        )
+                    }
 
-                        if ((onSearchClick != null || onSortClick != null || onFilterClick != null || onRemindersClick != null) &&
-                            (onHistoryClick != null || onSwitchAccountClick != null || onLogoutClick != null)
-                        ) {
-                            HorizontalDivider()
-                        }
+                    onSwitchAccountClick?.let {
+                        DropdownMenuItem(
+                            text = { Text("Switch Account") },
+                            onClick = {
+                                showMenu = false
+                                it()
+                            }
+                        )
+                    }
 
-                        if (onHistoryClick != null) {
-                            DropdownMenuItem(
-                                text = { Text("Past Notes") },
-                                onClick = {
-                                    showMenu = false
-                                    onHistoryClick.invoke()
-                                }
-                            )
-                        }
-                        if (onSwitchAccountClick != null) {
-                            DropdownMenuItem(
-                                text = { Text("Switch Account") },
-                                onClick = {
-                                    showMenu = false
-                                    onSwitchAccountClick.invoke()
-                                }
-                            )
-                        }
-                        if (onLogoutClick != null) {
-                            DropdownMenuItem(
-                                text = { Text("Logout") },
-                                onClick = {
-                                    showMenu = false
-                                    onLogoutClick.invoke()
-                                }
-                            )
-                        }
+                    onLogoutClick?.let {
+                        DropdownMenuItem(
+                            text = { Text("Logout") },
+                            onClick = {
+                                showMenu = false
+                                it()
+                            }
+                        )
                     }
                 }
             }

@@ -1,5 +1,7 @@
 package com.example.takeanote1.ui.components
 
+import android.R.attr.maxHeight
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,43 +13,63 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.rememberDateRangePickerState
+import androidx.compose.ui.platform.LocalConfiguration
 
 @Composable
-fun SortDialog(onDismiss: () -> Unit, onSortSelected: (String, String) -> Unit) {
+fun SortDialog(
+    onDismiss: () -> Unit,
+    onSortSelected: (String, String) -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Sort By") },
         text = {
-            Column {
-                ListItem(
-                    headlineContent = { Text("Date (Newest First)") },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    trailingContent = { TextButton(onClick = { onSortSelected("createdAt", "DESC") }) { Text("Select") } }
-                )
-                ListItem(
-                    headlineContent = { Text("Date (Oldest First)") },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    trailingContent = { TextButton(onClick = { onSortSelected("createdAt", "ASC") }) { Text("Select") } }
-                )
-                ListItem(
-                    headlineContent = { Text("Title (A-Z)") },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    trailingContent = { TextButton(onClick = { onSortSelected("title", "ASC") }) { Text("Select") } }
-                )
-                ListItem(
-                    headlineContent = { Text("Title (Z-A)") },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    trailingContent = { TextButton(onClick = { onSortSelected("title", "DESC") }) { Text("Select") } }
-                )
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                SortItem("Date (Newest First)") {
+                    onSortSelected("createdAt", "DESC")
+                }
+                SortItem("Date (Oldest First)") {
+                    onSortSelected("createdAt", "ASC")
+                }
+                SortItem("Title (A–Z)") {
+                    onSortSelected("title", "ASC")
+                }
+                SortItem("Title (Z–A)") {
+                    onSortSelected("title", "DESC")
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
         }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun SortItem(
+    title: String,
+    onSelect: () -> Unit
+) {
+    ListItem(
+        headlineContent = { Text(title) },
+        trailingContent = {
+            TextButton(onClick = onSelect) {
+                Text("Select")
+            }
+        }
+    )
+}
+
+
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterDialog(
     onDismiss: () -> Unit,
@@ -60,10 +82,15 @@ fun FilterDialog(
     val topics = listOf("All", "Work", "Personal", "Study", "Ideas", "Other")
     val state = rememberDateRangePickerState()
 
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        modifier = Modifier.fillMaxWidth().fillMaxHeight(0.9f),
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier
+            .widthIn(max = if (isLandscape) 600.dp else 400.dp) // max width
+            .heightIn(max = 600.dp), // max height for both orientations
         title = {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -75,9 +102,20 @@ fun FilterDialog(
             }
         },
         text = {
-            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                Text("By Topic:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 8.dp)
+            ) {
+                // Topics
+                Text(
+                    "By Topic:",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
                 Spacer(modifier = Modifier.height(8.dp))
+
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -92,11 +130,16 @@ fun FilterDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+                Divider()
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text("By Date Range:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                // Date Range
+                Text(
+                    "By Date Range:",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
 
                 if (currentDateRange.first != null && currentDateRange.second != null) {
                     val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
@@ -112,7 +155,12 @@ fun FilterDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Box(modifier = Modifier.height(450.dp).fillMaxWidth()) {
+                // DatePicker with fixed height
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp) // fixed height, enough for portrait & landscape
+                ) {
                     DateRangePicker(
                         state = state,
                         modifier = Modifier.fillMaxSize(),
@@ -127,6 +175,7 @@ fun FilterDialog(
             Button(
                 onClick = {
                     onDateRangeSelected(state.selectedStartDateMillis, state.selectedEndDateMillis)
+                    onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             ) {

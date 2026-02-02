@@ -1,10 +1,8 @@
 package com.example.takeanote1.data.repository
 
 import android.content.Context
-import androidx.work.Data
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
+import android.util.Log
+import androidx.work.*
 import com.example.takeanote1.workers.NoteReminderWorker
 import java.util.concurrent.TimeUnit
 
@@ -27,10 +25,13 @@ class WorkManagerNotificationRepository(context: Context) {
         triggerTimeMillis: Long
     ) {
         val now = System.currentTimeMillis()
-        var delay = triggerTimeMillis - now
+        val delay = triggerTimeMillis - now
 
-        // Ensure delay is not negative
-        if (delay < 0) delay = 0
+        // If the trigger time is in the past, do NOT schedule the notification
+        if (delay <= 0) {
+            Log.w("WorkManagerRepo", "Reminder time for noteId=$noteId is in the past. Skipping notification.")
+            return
+        }
 
         val data = Data.Builder()
             .putString(NoteReminderWorker.NOTE_ID_KEY, noteId)
@@ -39,15 +40,20 @@ class WorkManagerNotificationRepository(context: Context) {
             .build()
 
         val workRequest = OneTimeWorkRequestBuilder<NoteReminderWorker>()
-            .setInitialDelay(delay, TimeUnit.MILLISECONDS) // Use milliseconds
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .setInputData(data)
+            // Remove .setExpedited() for production; only use for testing if needed
+            .addTag("note_reminder_$noteId")
             .build()
 
+        // Enqueue unique work: replaces any existing reminder for the same note
         workManager.enqueueUniqueWork(
             "note_reminder_$noteId",
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
+
+        Log.d("WorkManagerRepo", "Scheduled notification for noteId=$noteId in ${delay}ms")
     }
 
     /**
@@ -55,5 +61,6 @@ class WorkManagerNotificationRepository(context: Context) {
      */
     fun cancelNotification(noteId: String) {
         workManager.cancelUniqueWork("note_reminder_$noteId")
+        Log.d("WorkManagerRepo", "Cancelled worker for noteId=$noteId")
     }
 }

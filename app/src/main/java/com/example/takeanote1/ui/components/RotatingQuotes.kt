@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
@@ -25,11 +26,10 @@ import kotlinx.coroutines.delay
 @Composable
 fun RotatingQuotesWithIcons(
     quotesWithIcons: List<Pair<String, Int>>,
-    rotationTime: Long = 2000L // 2 seconds
+    rotationTime: Long = 2000L
 ) {
     var currentIndex by remember { mutableStateOf(0) }
 
-    // Rotate quotes automatically
     LaunchedEffect(Unit) {
         while (true) {
             delay(rotationTime)
@@ -40,58 +40,80 @@ fun RotatingQuotesWithIcons(
     val (quote, iconRes) = quotesWithIcons[currentIndex]
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Image at top inside a Box
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .padding(bottom = 12.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(iconRes),
-                contentDescription = "Icon",
-                modifier = Modifier.fillMaxSize()
-            )
+
+        // 🔹 Icon (soft, airy, modern)
+        AnimatedContent(
+            targetState = iconRes,
+            transitionSpec = {
+                fadeIn(tween(400)) + scaleIn(initialScale = 0.9f) with
+                        fadeOut(tween(300))
+            }
+        ) { targetIcon ->
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(targetIcon),
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp)
+                )
+            }
         }
 
-        // Quote text below image, bold
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 🔹 Quote text (hero feel)
         AnimatedContent(
             targetState = quote,
             transitionSpec = {
-                fadeIn(animationSpec = tween(500)) with
-                        fadeOut(animationSpec = tween(500))
+                fadeIn(tween(500)) + slideInVertically { it / 6 } with
+                        fadeOut(tween(300))
             }
         ) { targetQuote ->
             Text(
                 text = targetQuote,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
             )
         }
 
-        // Dots for pagination
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         Row(
             horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            verticalAlignment = Alignment.CenterVertically
         ) {
             quotesWithIcons.forEachIndexed { index, _ ->
-                val isSelected = index == currentIndex
-                val dotColor =
-                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
+                val selected = index == currentIndex
 
                 Box(
                     modifier = Modifier
-                        .size(12.dp)
+                        .height(6.dp)
+                        .width(if (selected) 20.dp else 6.dp)
                         .clip(CircleShape)
-                        .background(dotColor)
+                        .background(
+                            if (selected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
                         .clickable(
-                            indication = LocalIndication.current,
-                            interactionSource = remember { MutableInteractionSource() }
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
                         ) {
                             currentIndex = index
                         }
@@ -102,6 +124,5 @@ fun RotatingQuotesWithIcons(
                 }
             }
         }
-
     }
 }

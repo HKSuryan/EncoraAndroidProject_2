@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -15,11 +16,18 @@ class NoteReminderWorker(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        val noteId = inputData.getString(NOTE_ID_KEY) ?: "0"
-        val noteTitle = inputData.getString(NOTE_TITLE_KEY) ?: "Reminder"
-        val noteContent = inputData.getString(NOTE_CONTENT_KEY) ?: "You have a note to check."
+        val noteId = inputData.getString(NOTE_ID_KEY) ?: return Result.failure()
+        val title = inputData.getString(NOTE_TITLE_KEY) ?: "Reminder"
+        val content = inputData.getString(NOTE_CONTENT_KEY) ?: "You have a note to check."
 
-        showNotification(noteId, noteTitle, noteContent)
+        Log.d("NoteReminderWorker", "Running worker for noteId=$noteId")
+
+        try {
+            showNotification(noteId, title, content)
+        } catch (e: Exception) {
+            Log.e("NoteReminderWorker", "Failed to show notification", e)
+            return Result.failure()
+        }
 
         return Result.success()
     }
@@ -33,8 +41,10 @@ class NoteReminderWorker(
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Note Reminders",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply { description = "Channel for Note Reminders" }
+                NotificationManager.IMPORTANCE_HIGH // High importance ensures sound/heads-up
+            ).apply {
+                description = "Channel for Note Reminders"
+            }
             notificationManager.createNotificationChannel(channel)
         }
 
@@ -42,11 +52,13 @@ class NoteReminderWorker(
             .setSmallIcon(R.drawable.ic_note)
             .setContentTitle(title)
             .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH) // Heads-up notification
             .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
 
-        // Use unique ID per note to prevent overwriting notifications
+        // Use unique ID per note
         notificationManager.notify(noteId.hashCode(), builder.build())
+        Log.d("NoteReminderWorker", "Notification shown for noteId=$noteId")
     }
 
     companion object {

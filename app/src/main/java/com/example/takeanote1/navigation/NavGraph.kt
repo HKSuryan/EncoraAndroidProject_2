@@ -16,10 +16,7 @@ import com.example.takeanote1.ui.home.HomeScreen
 import com.example.takeanote1.ui.home.NotesViewModel
 import com.example.takeanote1.ui.addnote.AddNoteScreen
 import com.example.takeanote1.ui.completed.CompletedNotesScreen
-import com.example.takeanote1.ui.reminder.ReminderViewModel
-import com.example.takeanote1.ui.reminder.RemindersListScreen
-import com.example.takeanote1.ui.reminder.AddReminderScreen
-import com.example.takeanote1.data.GoogleSignInManager
+
 
 @Composable
 fun AppNavGraph() {
@@ -40,9 +37,6 @@ fun AppNavGraph() {
         )
     )
 
-    val reminderViewModel: ReminderViewModel = viewModel(
-        factory = ReminderViewModel.Factory(app.repository, app.userPreferences)
-    )
 
     NavHost(
         navController = navController,
@@ -117,33 +111,6 @@ fun AppNavGraph() {
                     }
                 },
                 onEditNoteClick = { noteId -> navController.navigate("add_note/$noteId") }
-            )
-        }
-        composable("reminders") {
-            RemindersListScreen(
-                viewModel = reminderViewModel,
-                onAddReminderClick = { navController.navigate("add_reminder") },
-                onBack = { notesViewModel.clearDraft() ;navController.popBackStack() }
-            )
-        }
-
-        composable("add_reminder") {
-            AddReminderScreen(
-                viewModel = reminderViewModel,
-                onBack = {notesViewModel.clearDraft() ; navController.popBackStack() }
-            )
-        }
-
-        // Add reminder with note ID (optional route for creating reminder from a note)
-        composable(
-            route = "add_reminder/{noteId}",
-            arguments = listOf(navArgument("noteId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val noteId = backStackEntry.arguments?.getInt("noteId")
-            AddReminderScreen(
-                viewModel = reminderViewModel,
-                noteId = noteId,
-                onBack = {notesViewModel.clearDraft() ; navController.popBackStack() }
             )
         }
 
