@@ -1,5 +1,6 @@
 package com.example.takeanote1.data.local.dao
 
+import android.provider.ContactsContract
 import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
@@ -15,6 +16,7 @@ interface NotesDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNote(note: NoteEntity)
+
 
     @Query("SELECT * FROM notes WHERE userId = :uid ORDER BY createdAt DESC")
     fun getNotes(uid: String): Flow<List<NoteEntity>>

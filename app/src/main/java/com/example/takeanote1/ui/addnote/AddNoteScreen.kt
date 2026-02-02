@@ -25,16 +25,20 @@ enum class FocusTarget { TITLE, CONTENT }
 /* ------------------ Disable Past Dates ------------------ */
 @OptIn(ExperimentalMaterial3Api::class)
 object FutureDatesOnly : SelectableDates {
+
     override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-        val todayStart = Calendar.getInstance().apply {
+        val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+            timeInMillis = System.currentTimeMillis()
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-        return utcTimeMillis >= todayStart
+        }
+
+        return utcTimeMillis >= utcCalendar.timeInMillis
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,9 +72,16 @@ fun AddNoteScreen(
 
     /* ------------------ Date Picker ------------------ */
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = draft.reminderTime ?: System.currentTimeMillis(),
+        initialSelectedDateMillis = draft.reminderTime
+            ?: Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis,
         selectableDates = FutureDatesOnly
     )
+
 
     /* ------------------ Time Picker ------------------ */
     val cal = Calendar.getInstance().apply {

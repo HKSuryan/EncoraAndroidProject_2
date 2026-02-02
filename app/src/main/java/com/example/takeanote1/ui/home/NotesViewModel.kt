@@ -321,7 +321,14 @@ private val _searchQuery = MutableStateFlow(TextFieldValue())
     ) {
         if (reminderTime <= System.currentTimeMillis()) return
 
+        notificationRepository.scheduleNotificationAt(
+            noteId = noteId,
+            title = title,
+            content = content,
+            triggerTimeMillis = reminderTime
+        )
     }
+
 
     suspend fun getNoteById(noteId: String): NoteEntity? =
         repository.getNoteById(noteId)
