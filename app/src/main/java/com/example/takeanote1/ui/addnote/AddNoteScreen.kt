@@ -6,7 +6,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -17,9 +16,21 @@ import com.example.takeanote1.ui.home.NotesViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-/** Tracks which field had focus (rotation-safe) */
-enum class FocusTarget {
-    TITLE, CONTENT
+/* ------------------ Focus Tracking ------------------ */
+enum class FocusTarget { TITLE, CONTENT }
+
+/* ------------------ Disable Past Dates ------------------ */
+@OptIn(ExperimentalMaterial3Api::class)
+object FutureDatesOnly : SelectableDates {
+    override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+        val todayStart = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        return utcTimeMillis >= todayStart
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,71 +42,60 @@ fun AddNoteScreen(
 ) {
     val isEditing = noteId != null
 
-    // ---- ViewModel-backed state (rotation safe) ----
-    val title by remember { derivedStateOf { viewModel.draftTitle } }
-    val content by remember { derivedStateOf { viewModel.draftContent } }
-    val topic by remember { derivedStateOf { viewModel.draftTopic } }
-    val reminderTime by remember { derivedStateOf { viewModel.draftReminderTime } }
-    val showDatePicker by remember { derivedStateOf { viewModel.draftShowDatePicker } }
-    val showTimePicker by remember { derivedStateOf { viewModel.draftShowTimePicker } }
-    val dateError by remember { derivedStateOf { viewModel.draftDateError } }
-    val timeError by remember { derivedStateOf { viewModel.draftTimeError } }
+    /* ------------------ VM-backed state ------------------ */
+    val title = viewModel.draftTitle
+    val content = viewModel.draftContent
+    val topic = viewModel.draftTopic
+    val reminderTime = viewModel.draftReminderTime
+    val showDatePicker = viewModel.draftShowDatePicker
+    val showTimePicker = viewModel.draftShowTimePicker
+    val dateError = viewModel.draftDateError
+    val timeError = viewModel.draftTimeError
 
-    // ---- Focus handling (rotation safe) ----
+    /* ------------------ Focus ------------------ */
     val titleFocusRequester = remember { FocusRequester() }
     val contentFocusRequester = remember { FocusRequester() }
 
-    var lastFocus by rememberSaveable { mutableStateOf<FocusTarget?>(null) }
-    var focusRestored by rememberSaveable { mutableStateOf(false) }
+    // Restore focus safely after rotation using ViewModel
+    LaunchedEffect(viewModel.lastFocusTarget) {
+        when (viewModel.lastFocusTarget) {
+            FocusTarget.TITLE -> titleFocusRequester.requestFocus()
+            FocusTarget.CONTENT -> contentFocusRequester.requestFocus()
+            null -> if (!isEditing) titleFocusRequester.requestFocus()
+        }
+    }
 
-    // ---- Scroll ----
-    val verticalScrollState = rememberScrollState()
-    val horizontalScrollState = rememberScrollState()
+    /* ------------------ Scroll ------------------ */
+    val verticalScroll = rememberScrollState()
+    val horizontalScroll = rememberScrollState()
 
     val topics = listOf("General", "Work", "Personal", "Shopping", "Health", "Ideas")
 
-    // ---- Date Picker ----
+    /* ------------------ Date Picker ------------------ */
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = reminderTime ?: System.currentTimeMillis()
+        initialSelectedDateMillis = reminderTime ?: System.currentTimeMillis(),
+        selectableDates = FutureDatesOnly
     )
 
-    // ---- Time Picker ----
-    val calendar = Calendar.getInstance().apply {
+    /* ------------------ Time Picker ------------------ */
+    val cal = Calendar.getInstance().apply {
         timeInMillis = reminderTime ?: System.currentTimeMillis()
     }
 
     val timePickerState = rememberTimePickerState(
-        initialHour = calendar.get(Calendar.HOUR_OF_DAY),
-        initialMinute = calendar.get(Calendar.MINUTE),
+        initialHour = cal.get(Calendar.HOUR_OF_DAY),
+        initialMinute = cal.get(Calendar.MINUTE),
         is24Hour = false
     )
 
-    // ---- Load note when editing ----
+    /* ------------------ Load edit note ------------------ */
     LaunchedEffect(noteId) {
         if (isEditing && !viewModel.draftLoaded) {
             viewModel.loadNoteForEdit(noteId!!)
         }
     }
 
-    // ---- Restore EXACT focus after rotation ----
-    LaunchedEffect(lastFocus, isEditing) {
-        if (!focusRestored) {
-            when (lastFocus) {
-                FocusTarget.TITLE -> titleFocusRequester.requestFocus()
-                FocusTarget.CONTENT -> contentFocusRequester.requestFocus()
-                null -> {
-                    if (isEditing) {
-                        contentFocusRequester.requestFocus()
-                    } else {
-                        titleFocusRequester.requestFocus()
-                    }
-                }
-            }
-            focusRestored = true
-        }
-    }
-
-    // ---------- DATE PICKER ----------
+    /* ------------------ DATE PICKER ------------------ */
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { viewModel.draftShowDatePicker = false },
@@ -111,7 +111,7 @@ fun AddNoteScreen(
                     }.timeInMillis
 
                     if (selectedDate < todayStart) {
-                        viewModel.draftDateError = "Please select a future date"
+                        viewModel.draftDateError = "Please select today or a future date"
                         return@TextButton
                     }
 
@@ -136,7 +136,7 @@ fun AddNoteScreen(
         }
     }
 
-    // ---------- TIME PICKER ----------
+    /* ------------------ TIME PICKER ------------------ */
     if (showTimePicker) {
         AlertDialog(
             onDismissRequest = { viewModel.draftShowTimePicker = false },
@@ -154,7 +154,7 @@ fun AddNoteScreen(
                 TextButton(onClick = {
                     val date = datePickerState.selectedDateMillis ?: return@TextButton
 
-                    val cal = Calendar.getInstance().apply {
+                    val finalCal = Calendar.getInstance().apply {
                         timeInMillis = date
                         set(Calendar.HOUR_OF_DAY, timePickerState.hour)
                         set(Calendar.MINUTE, timePickerState.minute)
@@ -162,12 +162,12 @@ fun AddNoteScreen(
                         set(Calendar.MILLISECOND, 0)
                     }
 
-                    if (cal.timeInMillis <= System.currentTimeMillis()) {
+                    if (finalCal.timeInMillis <= System.currentTimeMillis()) {
                         viewModel.draftTimeError = "Please select a future time"
                         return@TextButton
                     }
 
-                    viewModel.draftReminderTime = cal.timeInMillis
+                    viewModel.draftReminderTime = finalCal.timeInMillis
                     viewModel.draftTimeError = null
                     viewModel.draftShowTimePicker = false
                 }) { Text("Set Reminder") }
@@ -180,7 +180,7 @@ fun AddNoteScreen(
         )
     }
 
-    // ---------- MAIN UI ----------
+    /* ------------------ MAIN UI ------------------ */
     Scaffold(
         topBar = {
             AppTopBar(
@@ -193,12 +193,13 @@ fun AddNoteScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(verticalScrollState)
+                .verticalScroll(verticalScroll)
                 .padding(padding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
+            /* ------------------ Title ------------------ */
             OutlinedTextField(
                 value = title,
                 onValueChange = { viewModel.draftTitle = it },
@@ -207,16 +208,17 @@ fun AddNoteScreen(
                     .fillMaxWidth()
                     .focusRequester(titleFocusRequester)
                     .onFocusChanged {
-                        if (it.isFocused) lastFocus = FocusTarget.TITLE
+                        if (it.isFocused) viewModel.lastFocusTarget = FocusTarget.TITLE
                     }
             )
 
+            /* ------------------ Topic ------------------ */
             Text("Select Topic", style = MaterialTheme.typography.labelLarge)
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(horizontalScrollState),
+                    .horizontalScroll(horizontalScroll),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 topics.forEach {
@@ -228,20 +230,22 @@ fun AddNoteScreen(
                 }
             }
 
+            /* ------------------ Content ------------------ */
             OutlinedTextField(
                 value = content,
                 onValueChange = { viewModel.draftContent = it },
                 label = { Text("Content") },
+                minLines = 5,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 160.dp)
                     .focusRequester(contentFocusRequester)
                     .onFocusChanged {
-                        if (it.isFocused) lastFocus = FocusTarget.CONTENT
-                    },
-                minLines = 5
+                        if (it.isFocused) viewModel.lastFocusTarget = FocusTarget.CONTENT
+                    }
             )
 
+            /* ------------------ Reminder Display ------------------ */
             reminderTime?.let {
                 val formatted = SimpleDateFormat(
                     "EEE, MMM d, hh:mm a",
@@ -259,6 +263,7 @@ fun AddNoteScreen(
                 }
             }
 
+            /* ------------------ Set/Update Reminder ------------------ */
             Button(
                 onClick = { viewModel.draftShowDatePicker = true },
                 modifier = Modifier.fillMaxWidth()
@@ -266,6 +271,7 @@ fun AddNoteScreen(
                 Text(if (reminderTime == null) "Set Reminder" else "Update Reminder")
             }
 
+            /* ------------------ Save / Update Note ------------------ */
             Button(
                 onClick = {
                     if (isEditing) {
