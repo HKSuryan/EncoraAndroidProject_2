@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -43,9 +44,10 @@ fun CompletedNotesScreen(
     val viewType by viewModel.viewType.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
-    var showSearchField by remember { mutableStateOf(false) }
-    var showSortDialog by remember { mutableStateOf(false) }
-    var showFilterDialog by remember { mutableStateOf(false) }
+    var showSearchField by rememberSaveable { mutableStateOf(false) }
+    var showSortDialog by rememberSaveable { mutableStateOf(false) }
+    var showFilterDialog by rememberSaveable { mutableStateOf(false) }
+
 
     Scaffold(
         topBar = {

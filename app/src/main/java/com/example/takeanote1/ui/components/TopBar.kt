@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,7 +33,8 @@ fun AppTopBar(
     onRemindersClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
-    var showMenu by remember { mutableStateOf(false) }
+
+    var showMenu by rememberSaveable { mutableStateOf(false) }
 
     TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
@@ -58,10 +60,8 @@ fun AppTopBar(
         },
         actions = {
 
-            // 🔹 Custom injected actions (unchanged)
             actions()
 
-            // 🔹 High-priority actions shown directly
             if (onSearchClick != null) {
                 IconButton(onClick = onSearchClick) {
                     Icon(Icons.Default.Search, contentDescription = "Search")
@@ -71,16 +71,12 @@ fun AppTopBar(
             if (onViewTypeClick != null) {
                 IconButton(onClick = onViewTypeClick) {
                     Icon(
-                        imageVector = if (isGridView)
-                            Icons.Default.List
-                        else
-                            Icons.Default.GridView,
+                        imageVector = if (isGridView) Icons.Default.List else Icons.Default.GridView,
                         contentDescription = "Toggle View"
                     )
                 }
             }
 
-            // 🔹 Overflow menu (secondary actions only)
             val hasOverflow = onSortClick != null ||
                     onFilterClick != null ||
                     onRemindersClick != null ||
@@ -123,19 +119,6 @@ fun AppTopBar(
                             }
                         )
                     }
-
-//                    onRemindersClick?.let {
-//                        DropdownMenuItem(
-//                            text = { Text("Reminders") },
-//                            onClick = {
-//                                showMenu = false
-//                                it()
-//                            },
-//                            leadingIcon = {
-//                                Icon(Icons.Default.Notifications, contentDescription = null)
-//                            }
-//                        )
-//                    }
 
                     if (
                         (onSortClick != null || onFilterClick != null || onRemindersClick != null) &&
