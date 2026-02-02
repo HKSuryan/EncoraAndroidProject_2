@@ -1,6 +1,9 @@
 package com.example.takeanote1.ui.home
 
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -24,6 +27,23 @@ class NotesViewModel(
     private val userPreferences: UserPreferences,
     private val notificationRepository: WorkManagerNotificationRepository
 ) : ViewModel() {
+    // ---------------- ADD NOTE DRAFT STATE (Rotation Safe) ----------------
+
+    var draftTitle by mutableStateOf("")
+    var draftContent by mutableStateOf("")
+    var draftTopic by mutableStateOf("General")
+    var draftReminderTime by mutableStateOf<Long?>(null)
+
+    var draftShowDatePicker by mutableStateOf(false)
+    var draftShowTimePicker by mutableStateOf(false)
+
+    var draftDateError by mutableStateOf<String?>(null)
+    var draftTimeError by mutableStateOf<String?>(null)
+
+    /**
+     * Prevents reloading note again on recomposition / rotation
+     */
+    var draftLoaded by mutableStateOf(false)
 
     private val TAG = "NotesViewModel"
 
@@ -44,6 +64,36 @@ class NotesViewModel(
 
     private val _dateRangeFilter = MutableStateFlow<Pair<Long?, Long?>>(null to null)
     val dateRangeFilter: StateFlow<Pair<Long?, Long?>> = _dateRangeFilter
+    fun loadNoteForEdit(noteId: String) {
+        if (draftLoaded) return
+
+        viewModelScope.launch {
+            val note = repository.getNoteById(noteId) ?: return@launch
+
+            draftTitle = note.title
+            draftContent = note.content
+            draftTopic = note.topic
+            draftReminderTime = note.reminderTime
+
+            draftDateError = null
+            draftTimeError = null
+            draftLoaded = true
+        }
+    }
+    fun clearDraft() {
+        draftTitle = ""
+        draftContent = ""
+        draftTopic = "General"
+        draftReminderTime = null
+
+        draftShowDatePicker = false
+        draftShowTimePicker = false
+
+        draftDateError = null
+        draftTimeError = null
+
+        draftLoaded = false
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val filtersFlow = combine(
@@ -65,40 +115,46 @@ class NotesViewModel(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val notesPaged: Flow<PagingData<NoteEntity>> = filtersFlow.flatMapLatest { filters ->
-        if (filters.uid == null) {
-            flowOf(PagingData.empty())
-        } else {
-            repository.getNotesPaged(
-                uid = filters.uid,
-                searchQuery = filters.query,
-                sortField = filters.field,
-                sortOrder = filters.order,
-                topic = filters.topic,
-                isCompleted = false,
-                startDate = filters.dateRange.first,
-                endDate = filters.dateRange.second
-            )
-        }
-    }.cachedIn(viewModelScope)
+    val notesPaged: Flow<PagingData<NoteEntity>> =
+        filtersFlow.flatMapLatest { filters ->
+            val uid = filters.uid
+            if (uid == null) {
+                flowOf(PagingData.empty<NoteEntity>())
+            } else {
+                repository.getNotesPaged(
+                    uid = uid,
+                    searchQuery = filters.query,
+                    sortField = filters.field,
+                    sortOrder = filters.order,
+                    topic = filters.topic,
+                    isCompleted = false,
+                    startDate = filters.dateRange.first,
+                    endDate = filters.dateRange.second
+                )
+            }
+        }.cachedIn(viewModelScope)
+
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val completedNotesPaged: Flow<PagingData<NoteEntity>> = filtersFlow.flatMapLatest { filters ->
-        if (filters.uid == null) {
-            flowOf(PagingData.empty())
-        } else {
-            repository.getNotesPaged(
-                uid = filters.uid,
-                searchQuery = filters.query,
-                sortField = filters.field,
-                sortOrder = filters.order,
-                topic = filters.topic,
-                isCompleted = true,
-                startDate = filters.dateRange.first,
-                endDate = filters.dateRange.second
-            )
-        }
-    }.cachedIn(viewModelScope)
+    val completedNotesPaged: Flow<PagingData<NoteEntity>> =
+        filtersFlow.flatMapLatest { filters ->
+            val uid = filters.uid
+            if (uid == null) {
+                flowOf(PagingData.empty<NoteEntity>())
+            } else {
+                repository.getNotesPaged(
+                    uid = uid,
+                    searchQuery = filters.query,
+                    sortField = filters.field,
+                    sortOrder = filters.order,
+                    topic = filters.topic,
+                    isCompleted = true,
+                    startDate = filters.dateRange.first,
+                    endDate = filters.dateRange.second
+                )
+            }
+        }.cachedIn(viewModelScope)
+
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val activeNotes: StateFlow<List<NoteEntity>> = userPreferences.userIdFlow
