@@ -18,6 +18,7 @@ import com.example.takeanote1.ui.addnote.FocusTarget
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import java.util.UUID
 
 /* ----------------------------- VIEW TYPE ----------------------------- */
@@ -100,6 +101,23 @@ class NotesViewModel(
             }
         }
     }
+    fun getDayRange(millis: Long): Pair<Long, Long> {
+        val cal = Calendar.getInstance().apply { timeInMillis = millis }
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val start = cal.timeInMillis
+
+        cal.set(Calendar.HOUR_OF_DAY, 23)
+        cal.set(Calendar.MINUTE, 59)
+        cal.set(Calendar.SECOND, 59)
+        cal.set(Calendar.MILLISECOND, 999)
+        val end = cal.timeInMillis
+
+        return start to end
+    }
+
 
     /* ----------------------------- VIEW TYPE ----------------------------- */
 
@@ -157,7 +175,13 @@ private val _searchQuery = MutableStateFlow(TextFieldValue())
     }
 
     fun setDateRangeFilter(start: Long?, end: Long?) {
-        _filters.update { it.copy(dateRange = start to end) }
+        val range = when {
+            start != null && end != null -> getDayRange(start).first to getDayRange(end).second
+            start != null -> getDayRange(start)
+            end != null -> getDayRange(end)
+            else -> null to null
+        }
+        _filters.update { it.copy(dateRange = range) }
     }
 
     fun clearFilters() {
@@ -174,22 +198,23 @@ private val _searchQuery = MutableStateFlow(TextFieldValue())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun notesPaging(isCompleted: Boolean): Flow<PagingData<NoteEntity>> =
-        filterWithUid.flatMapLatest { (uid, filter) ->
-            if (uid == null) {
-                flowOf(PagingData.empty())
-            } else {
-                repository.getNotesPaged(
+        combine(userPreferences.userIdFlow, filters) { uid, filter -> uid to filter }
+            .flatMapLatest { (uid, filter) ->
+                if (uid == null) flowOf(PagingData.empty())
+                else repository.getNotesPaged(
                     uid = uid,
-                    searchQuery = filter.query,
+                    searchQuery = filter.query.takeIf { it.isNotBlank() } ?: "",
                     sortField = filter.sortField,
                     sortOrder = filter.sortOrder,
                     topic = filter.topic,
                     isCompleted = isCompleted,
-                    startDate = filter.dateRange.first,
-                    endDate = filter.dateRange.second
+                    startDate = filter.dateRange.first, // can be null
+                    endDate = filter.dateRange.second   // can be null
                 )
             }
-        }.cachedIn(viewModelScope)
+            .cachedIn(viewModelScope)
+
+
 
     val notesPaged = notesPaging(isCompleted = false)
     val completedNotesPaged = notesPaging(isCompleted = true)

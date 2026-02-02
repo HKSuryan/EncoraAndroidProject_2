@@ -1,5 +1,7 @@
 package com.example.takeanote1.ui.components
 
+import android.R.attr.maxHeight
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,6 +13,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.rememberDateRangePickerState
+import androidx.compose.ui.platform.LocalConfiguration
 
 @Composable
 fun SortDialog(
@@ -61,7 +67,9 @@ private fun SortItem(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterDialog(
     onDismiss: () -> Unit,
@@ -74,10 +82,15 @@ fun FilterDialog(
     val topics = listOf("All", "Work", "Personal", "Study", "Ideas", "Other")
     val state = rememberDateRangePickerState()
 
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        modifier = Modifier.fillMaxWidth().fillMaxHeight(0.95f),
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier
+            .widthIn(max = if (isLandscape) 600.dp else 400.dp) // max width
+            .heightIn(max = 600.dp), // max height for both orientations
         title = {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -89,72 +102,72 @@ fun FilterDialog(
             }
         },
         text = {
-            BoxWithConstraints(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 8.dp)
             ) {
-                val maxHeightAvailable = maxHeight
+                // Topics
+                Text(
+                    "By Topic:",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Column(
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    maxItemsInEachRow = 3
+                ) {
+                    topics.forEach { topic ->
+                        FilterChip(
+                            selected = currentTopic == topic,
+                            onClick = { onTopicSelected(topic) },
+                            label = { Text(topic) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Date Range
+                Text(
+                    "By Date Range:",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (currentDateRange.first != null && currentDateRange.second != null) {
+                    val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                    val start = sdf.format(Date(currentDateRange.first!!))
+                    val end = sdf.format(Date(currentDateRange.second!!))
+                    Text(
+                        "Current: $start - $end",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // DatePicker with fixed height
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
+                        .height(300.dp) // fixed height, enough for portrait & landscape
                 ) {
-                    // Topic Chips
-                    Text("By Topic:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        maxItemsInEachRow = 3
-                    ) {
-                        topics.forEach { topic ->
-                            FilterChip(
-                                selected = currentTopic == topic,
-                                onClick = { onTopicSelected(topic) },
-                                label = { Text(topic) }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Date Range
-                    Text("By Date Range:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-
-                    if (currentDateRange.first != null && currentDateRange.second != null) {
-                        val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-                        val start = sdf.format(Date(currentDateRange.first!!))
-                        val end = sdf.format(Date(currentDateRange.second!!))
-                        Text(
-                            "Current: $start - $end",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Dynamic height for DatePicker
-                    val remainingHeight = maxHeightAvailable - 200.dp // leave space for chips, texts, buttons
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = remainingHeight)
-                    ) {
-                        DateRangePicker(
-                            state = state,
-                            modifier = Modifier.fillMaxSize(),
-                            title = null,
-                            headline = null,
-                            showModeToggle = false
-                        )
-                    }
+                    DateRangePicker(
+                        state = state,
+                        modifier = Modifier.fillMaxSize(),
+                        title = null,
+                        headline = null,
+                        showModeToggle = false
+                    )
                 }
             }
         },
@@ -162,6 +175,7 @@ fun FilterDialog(
             Button(
                 onClick = {
                     onDateRangeSelected(state.selectedStartDateMillis, state.selectedEndDateMillis)
+                    onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             ) {

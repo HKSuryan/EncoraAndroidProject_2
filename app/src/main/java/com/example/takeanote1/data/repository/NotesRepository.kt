@@ -177,4 +177,5 @@ class NotesRepository(
         Log.d(TAG, "getNoteById: Fetching note $noteId")
         return notesDao.getNoteById(noteId)
     }
+
 }
